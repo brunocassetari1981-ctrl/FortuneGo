@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- Preferências do jogador (som, favoritos) entram no backup; cache não. -->
+    <include domain="sharedpref" path="." />
+    <exclude domain="database" path="webview.db" />
+    <exclude domain="file" path="app_webview" />
+</full-backup-content>

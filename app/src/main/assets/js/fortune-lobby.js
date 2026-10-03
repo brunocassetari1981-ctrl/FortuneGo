@@ -10,19 +10,26 @@
   var FG = window.FortuneGo || {};
 
   /* ------------------------------------------------------------------ *
-   * Catálogo. Os três últimos apontam de propósito para arquivos que NÃO
-   * existem: servem para demonstrar o gerador de ícone do fortune-enhance.
+   * Catálogo. Os DOIS últimos apontam de propósito para caminhos errados
+   * (pasta que não existe, nome em inglês) para provar o motor de resgate:
+   *   - 'images/fortune_tiger_icon.png' → casa com img/tigre.png pelo dicionário PT/EN
+   *   - 'img/jogo-inexistente.png'      → cai no ícone SVG procedural
    * ------------------------------------------------------------------ */
   var GAMES = [
-    { id: 'tigre',  name: 'Tigre da Sorte',   img: 'img/tigre.png',          tag: 'hot',  rtp: 96.8, vol: 'alta'  },
-    { id: 'dragao', name: 'Dragão de Jade',   img: 'img/dragao.png',         tag: '',     rtp: 97.2, vol: 'média' },
-    { id: 'coelho', name: 'Coelho da Fortuna',img: 'img/coelho.png',         tag: 'new',  rtp: 96.1, vol: 'baixa' },
-    { id: 'touro',  name: 'Boi Dourado',      img: 'img/touro.png',          tag: 'hot',  rtp: 95.9, vol: 'alta'  },
-    { id: 'panda',  name: 'Panda Real',       img: 'img/panda.png',          tag: '',     rtp: 96.4, vol: 'média' },
-    { id: 'roleta', name: 'Roleta Imperial',  img: 'img/roleta.png',         tag: 'live', rtp: 97.3, vol: 'baixa' },
-    { id: 'mina',   name: 'Mina de Ouro',     img: 'img/mina-de-ouro.png',   tag: 'new',  rtp: 96.0, vol: 'alta'  },
-    { id: 'aviator',name: 'Aviador Fortune',  img: 'img/aviator.png',        tag: 'hot',  rtp: 97.0, vol: 'alta'  },
-    { id: 'bingo',  name: 'Bingo Imperial',   img: 'img/bingo-imperial.png', tag: 'live', rtp: 95.5, vol: 'média' }
+    { id: 'tigre',   name: 'Tigre da Sorte',    img: 'img/tigre.png',          tag: 'hot',  rtp: 96.8, vol: 'alta'  },
+    { id: 'dragao',  name: 'Dragão de Jade',    img: 'img/dragao.png',         tag: '',     rtp: 97.2, vol: 'média' },
+    { id: 'coelho',  name: 'Coelho da Fortuna', img: 'img/coelho.png',         tag: 'new',  rtp: 96.1, vol: 'baixa' },
+    { id: 'touro',   name: 'Boi Dourado',       img: 'img/touro.png',          tag: 'hot',  rtp: 95.9, vol: 'alta'  },
+    { id: 'panda',   name: 'Panda Real',        img: 'img/panda.png',          tag: '',     rtp: 96.4, vol: 'média' },
+    { id: 'roleta',  name: 'Roleta Imperial',   img: 'img/roleta.png',         tag: 'live', rtp: 97.3, vol: 'baixa' },
+    { id: 'mina',    name: 'Mina de Ouro',      img: 'img/mina-de-ouro.png',   tag: 'new',  rtp: 96.0, vol: 'alta'  },
+    { id: 'aviator', name: 'Aviador Fortune',   img: 'img/aviator.png',        tag: 'hot',  rtp: 97.0, vol: 'alta'  },
+    { id: 'bingo',   name: 'Bingo Imperial',    img: 'img/bingo-imperial.png', tag: 'live', rtp: 95.5, vol: 'média' },
+    { id: 'rato',    name: 'Rato Milionário',   img: 'img/rato.png',           tag: '',     rtp: 96.3, vol: 'média' },
+    { id: 'espaco',  name: 'Astro Multiplier',  img: 'img/espaco.png',         tag: 'new',  rtp: 97.1, vol: 'alta'  },
+    { id: 'futebol', name: 'Pênalti de Ouro',   img: 'img/futebol.png',        tag: 'live', rtp: 96.6, vol: 'média' },
+    { id: 'demo1',   name: 'Fortune Tiger',     img: 'images/fortune_tiger_icon.png', tag: '', rtp: 96.8, vol: 'alta' },
+    { id: 'demo2',   name: 'Jogo Sem Arte',     img: 'img/jogo-inexistente.png',      tag: '', rtp: 95.0, vol: 'baixa' }
   ];
 
   /* ------------------------------ Estado ------------------------------ */
@@ -401,6 +408,24 @@
     if (FG.toast) FG.toast('Promoção aplicada à sua conta ✨');
     if (FG.haptic) FG.haptic(12);
   });
+
+  /* --------- Atalho de diagnóstico: segure 1,2s no mascote do topo --------- */
+  (function diagnosticsShortcut() {
+    var avatar = document.querySelector('.topbar .avatar');
+    if (!avatar) return;
+    var timer = null;
+    var start = function () {
+      timer = setTimeout(function () {
+        if (FG.haptic) FG.haptic(40);
+        if (FG.diagnose) FG.diagnose();
+      }, 1200);
+    };
+    var stop = function () { clearTimeout(timer); };
+    avatar.addEventListener('pointerdown', start);
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (e) {
+      avatar.addEventListener(e, stop);
+    });
+  })();
 
   /* ------------------------------- Boot ------------------------------- */
 
