@@ -76,6 +76,19 @@ jobs:
           echo "size=$(du -h FortuneGo-debug.apk | cut -f1)" >> "$GITHUB_OUTPUT"
           ls -lh FortuneGo-debug.apk
 
+      - name: Conferir o que entrou no APK
+        run: |
+          {
+            echo "### Conteúdo do APK"
+            echo '```'
+            echo "tamanho: $(du -h FortuneGo-debug.apk | cut -f1)"
+            echo "imagens empacotadas: $(unzip -l FortuneGo-debug.apk | grep -cE 'assets/img/.*\.(png|webp)')"
+            echo "---"
+            unzip -l FortuneGo-debug.apk | grep -E 'assets/(index\.html|js/|css/|img/manifest)' || true
+            echo '```'
+          } > apk-report.md
+          cat apk-report.md
+
       - name: Subir APK como artefato
         uses: actions/upload-artifact@v4
         with:
@@ -107,6 +120,8 @@ jobs:
           STATUS="${{ job.status }}"
           {
             echo "## Build \`${{ github.sha }}\` — resultado: **$STATUS**"
+            echo
+            [ -f apk-report.md ] && cat apk-report.md
             echo
             echo '```'
             if [ -f build.log ]; then

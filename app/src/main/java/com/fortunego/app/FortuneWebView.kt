@@ -73,7 +73,8 @@ fun buildFortuneWebView(
             javaScriptEnabled = true
             javaScriptCanOpenWindowsAutomatically = true
             domStorageEnabled = true
-            databaseEnabled = true
+            // databaseEnabled está depreciado e é no-op nas WebViews modernas:
+            // localStorage/IndexedDB já funcionam via domStorageEnabled.
 
             loadsImagesAutomatically = true
             blockNetworkImage = false
