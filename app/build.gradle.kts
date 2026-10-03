@@ -1,19 +1,21 @@
 plugins {
     alias(libs.plugins.android.application)
-    // Se o Gradle reclamar "Kotlin not configured" / não compilar os .kt,
-    // descomente a linha abaixo — o template do Android Studio traz os 3 plugins.
-    // alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
 
+// Nível de SDK vem do gradle.properties (fortunego.sdk) para o CI e a sua máquina
+// poderem usar valores diferentes sem editar este arquivo.
+val fortuneSdk = (providers.gradleProperty("fortunego.sdk").orNull ?: "35").toInt()
+
 android {
     namespace = "com.fortunego.app"
-    compileSdk = 37
+    compileSdk = fortuneSdk
 
     defaultConfig {
         applicationId = "com.fortunego.app"
         minSdk = 24
-        targetSdk = 37
+        targetSdk = fortuneSdk
         versionCode = 1
         versionName = "1.0"
 
@@ -29,16 +31,17 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    // Alinha o Kotlin ao Java 11 — sem isso o AGP recente estoura
-    // "Inconsistent JVM-target compatibility between Java and Kotlin".
-    kotlin {
-        compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
-        }
-    }
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+}
+
+// Alinha o Kotlin ao Java 11 — sem isso o AGP recente estoura
+// "Inconsistent JVM-target compatibility between Java and Kotlin".
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
     }
 }
 
@@ -52,19 +55,20 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
 
-    // --- Adicionados para o FortuneGo (coordenadas diretas: não exigem mexer
-    // no libs.versions.toml; as versões do Compose vêm do BOM acima) ---
-    implementation("androidx.webkit:webkit:1.12.1")            // WebViewAssetLoader
-    implementation("androidx.compose.animation:animation")      // AnimatedVisibility do splash
+    // --- Adicionados para o FortuneGo (coordenadas diretas: funcionam com
+    // qualquer version catalog; versões do Compose vêm do BOM acima) ---
+    implementation("androidx.webkit:webkit:1.12.1")             // WebViewAssetLoader
+    implementation("androidx.compose.animation:animation")       // AnimatedVisibility do splash
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
+
+    debugImplementation(libs.androidx.compose.ui.tooling)
 }
 
 /* ---------------------------------------------------------------------------
  * Gera assets/img/manifest.json com o inventário real de imagens do app.
  * O fortune-enhance.js usa esse índice para casar caminhos errados do HTML
- * com os arquivos que de fato existem (inclusive por semelhança de nome).
- * É defensivo: se não houver pasta de assets, simplesmente não faz nada.
+ * com os arquivos que de fato existem. Defensivo: sem assets, não faz nada.
  * ------------------------------------------------------------------------- */
 val assetsDir = file("src/main/assets")
 
