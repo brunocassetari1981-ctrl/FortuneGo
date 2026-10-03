@@ -11,12 +11,13 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 jobs:
   apk:
     name: Compilar FortuneGo (debug)
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 45
 
     steps:
       - name: Checkout
@@ -28,13 +29,27 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Instalar plataforma e build-tools
+      # O runner do GitHub já vem com o Android SDK instalado — usamos o que
+      # existe, sem depender de action de terceiros (a setup-android falhou).
+      - name: Preparar Android SDK
         run: |
-          sdkmanager "platforms;android-35" "build-tools;35.0.0" "platform-tools"
-          yes | sdkmanager --licenses > /dev/null || true
+          set -x
+          echo "ANDROID_HOME=${ANDROID_HOME:-vazio}"
+          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-vazio}"
+          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
+          ls -1 "$SDK" || true
+          SDKMANAGER=$(find "$SDK/cmdline-tools" -name sdkmanager -type f 2>/dev/null | head -1)
+          echo "sdkmanager: ${SDKMANAGER:-NAO ENCONTRADO}"
+          if [ -n "$SDKMANAGER" ]; then
+            yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+            "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0" "platform-tools" || true
+          fi
+          echo "--- plataformas disponiveis ---"
+          ls -1 "$SDK/platforms" 2>/dev/null || echo "nenhuma"
+          echo "--- build-tools ---"
+          ls -1 "$SDK/build-tools" 2>/dev/null || echo "nenhum"
 
       - name: Gerar inventário de imagens
         run: python3 tools/gen-asset-manifest.py
@@ -47,16 +62,16 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Gerar gradle wrapper
-        run: gradle wrapper --gradle-version 8.9
-
       - name: Compilar APK de debug
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+        id: build
+        run: |
+          set -o pipefail
+          gradle assembleDebug --no-daemon --stacktrace --warning-mode all 2>&1 | tee build.log
 
       - name: Preparar artefato
         id: apk
         run: |
-          SRC=$(find app/build/outputs/apk/debug -name '*.apk' | head -1)
+          SRC=$(find app/build/outputs/apk -name '*.apk' | head -1)
           cp "$SRC" FortuneGo-debug.apk
           echo "size=$(du -h FortuneGo-debug.apk | cut -f1)" >> "$GITHUB_OUTPUT"
           ls -lh FortuneGo-debug.apk
@@ -77,10 +92,40 @@ jobs:
             --target "${{ github.sha }}" \
             --title "FortuneGo — APK de debug" \
             --prerelease \
-            --notes "APK gerado automaticamente a partir do commit ${{ github.sha }}.
+            --notes "APK gerado automaticamente do commit ${{ github.sha }} (${{ steps.apk.outputs.size }}).
 
-          Tamanho: ${{ steps.apk.outputs.size }}
-
-          **Como instalar:** baixe o arquivo no celular, abra e autorize
-          *Instalar apps de fontes desconhecidas* se o Android pedir.
+          **Como instalar:** baixe no celular, abra e autorize *Instalar apps de fontes desconhecidas* se o Android pedir.
           Build de debug — não serve para publicar na Play Store."
+
+      # Devolve o resultado por uma issue, porque o download de log do Actions
+      # não é acessível de onde o agente roda.
+      - name: Relatório do build
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          STATUS="${{ job.status }}"
+          {
+            echo "## Build \`${{ github.sha }}\` — resultado: **$STATUS**"
+            echo
+            echo '```'
+            if [ -f build.log ]; then
+              grep -E "error:|e: |FAILURE|What went wrong|Caused by|> Task .*FAILED|Execution failed|Unresolved reference|warning:" build.log \
+                | head -80 || true
+              echo "..."
+              tail -60 build.log
+            else
+              echo "build.log não foi gerado — a falha ocorreu antes da compilação."
+            fi
+            echo '```'
+          } > relatorio.md
+
+          head -c 60000 relatorio.md > relatorio-curto.md
+          cat relatorio-curto.md >> "$GITHUB_STEP_SUMMARY"
+
+          EXISTING=$(gh issue list --state open --search "Relatório de build in:title" --json number --jq '.[0].number')
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --body-file relatorio-curto.md
+          else
+            gh issue create --title "Relatório de build (CI)" --body-file relatorio-curto.md
+          fi
