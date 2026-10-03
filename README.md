@@ -201,6 +201,29 @@ Para desligar os efeitos num elemento, use a classe `fg-no-enhance`.
 
 ---
 
+## 📲 Baixar o APK pronto
+
+O GitHub Actions compila o app a cada push e publica o APK numa release:
+
+### 👉 [**Baixar FortuneGo-debug.apk**](https://github.com/brunocassetari1981-ctrl/FortuneGo/releases/tag/apk-debug)
+
+Abra esse link **no navegador do celular**, baixe o arquivo, toque nele e autorize
+*Instalar apps de fontes desconhecidas* se o Android pedir.
+
+| | |
+|---|---|
+| Tamanho | ~17 MB |
+| Tipo | debug (assinado com a chave de debug — não serve para a Play Store) |
+| Conteúdo verificado | `index.html`, `css/`, `js/`, `img/manifest.json` e **26 imagens** empacotadas |
+| Workflow | [`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml) |
+
+O workflow roda: JDK 17 → Android SDK → gera o inventário de imagens →
+**executa `tools/test-matcher.js`** (o build falha se o motor de resgate regredir) →
+`assembleDebug` → publica o APK como artefato e como release.
+O resultado de cada build também vira comentário na issue *Relatório de build (CI)*.
+
+---
+
 ## 🛠️ Build e preview
 
 ```bash
