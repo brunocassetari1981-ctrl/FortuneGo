@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FortuneGo</string>
+    <string name="press_back_again">Toque em voltar de novo para sair</string>
+    <string name="no_app_to_open">Nenhum app disponível para abrir este link</string>
+    <string name="share_with">Compartilhar com</string>
+</resources>

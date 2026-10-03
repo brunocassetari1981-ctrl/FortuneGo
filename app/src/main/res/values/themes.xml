@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.FortuneGo" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/fg_background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:colorBackground">@color/fg_background</item>
+    </style>
+
+    <!-- Tela inicial: fundo da marca enquanto o WebView sobe (sem flash branco). -->
+    <style name="Theme.FortuneGo.Splash" parent="Theme.FortuneGo">
+        <item name="android:windowBackground">@drawable/splash_background</item>
+    </style>
+
+</resources>

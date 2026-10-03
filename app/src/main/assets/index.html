@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0B0712">
+  <title>FortuneGo</title>
+  <link rel="stylesheet" href="css/fortune.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <img class="avatar fg-no-enhance" src="img/mascote.png" alt="Mascote FortuneGo">
+    <div class="hello">
+      <small>Boa sorte,</small>
+      <strong id="playerName">Jogador</strong>
+    </div>
+    <button class="icon-btn" id="soundBtn" title="Som" aria-label="Ligar ou desligar som">🔊</button>
+    <div class="balance">
+      <b id="balance">R$ 0,00</b>
+      <button class="plus" id="depositBtn" aria-label="Depositar">+</button>
+    </div>
+  </header>
+
+  <main class="wrap">
+
+    <!-- ============ INÍCIO ============ -->
+    <section class="view on" id="view-home">
+
+      <div class="jackpot">
+        <div>
+          <small>Jackpot acumulado</small>
+          <div class="value" id="jackpot">R$ 0</div>
+        </div>
+        <div class="trophy">🏆</div>
+      </div>
+
+      <div class="hero">
+        <div class="hero-track" id="heroTrack">
+          <div class="hero-slide" style="background:linear-gradient(120deg,#7f1d1d,#be123c 55%,#f59e0b)">
+            <h2>Bônus de boas-vindas</h2>
+            <p>Dobre seu primeiro depósito e ganhe 50 giros no Tigre da Sorte.</p>
+            <button class="cta" data-action="bonus">Resgatar agora</button>
+          </div>
+          <div class="hero-slide" style="background:linear-gradient(120deg,#4c1d95,#7c3aed 55%,#22d3ee)">
+            <h2>Torneio da Meia-Noite</h2>
+            <p>R$ 50.000 em prêmios distribuídos todos os dias às 00h.</p>
+            <button class="cta" data-action="torneio">Participar</button>
+          </div>
+          <div class="hero-slide" style="background:linear-gradient(120deg,#064e3b,#059669 55%,#facc15)">
+            <h2>Cashback de 15%</h2>
+            <p>Receba parte das apostas de volta toda segunda-feira.</p>
+            <button class="cta" data-action="cashback">Ver regras</button>
+          </div>
+        </div>
+        <div class="hero-dots" id="heroDots"></div>
+      </div>
+
+      <div class="search">
+        <input id="searchInput" type="search" placeholder="🔍  Buscar jogo..." aria-label="Buscar jogo">
+      </div>
+
+      <div class="chips" id="chips">
+        <button class="chip on" data-filter="todos">Todos</button>
+        <button class="chip" data-filter="hot">🔥 Em alta</button>
+        <button class="chip" data-filter="new">✨ Novos</button>
+        <button class="chip" data-filter="live">🎥 Ao vivo</button>
+        <button class="chip" data-filter="fav">❤️ Favoritos</button>
+      </div>
+
+      <div class="section-title">
+        <h3>Jogos em destaque</h3>
+        <span id="gameCount"></span>
+      </div>
+
+      <div class="grid" id="gameGrid"></div>
+    </section>
+
+    <!-- ============ PROMOÇÕES ============ -->
+    <section class="view" id="view-promo">
+      <div class="section-title"><h3>Promoções ativas</h3><span>atualizado hoje</span></div>
+      <div class="panel">
+        <h4>🎁 Giros grátis diários</h4>
+        <p>Entre todo dia e gire a roleta de prêmios para ganhar até 100 rodadas grátis.</p>
+        <button class="btn" data-action="giros">Girar roleta</button>
+      </div>
+      <div class="panel">
+        <h4>👥 Indique e ganhe</h4>
+        <p>R$ 25 de bônus para cada amigo que se cadastrar com o seu código <b>FORTUNE2026</b>.</p>
+        <button class="btn ghost" data-action="indicar">Compartilhar código</button>
+      </div>
+      <div class="panel">
+        <h4>⚡ Recarga relâmpago</h4>
+        <p>Depósitos entre 18h e 22h recebem 30% extra, sem limite de valor.</p>
+        <button class="btn ghost" data-action="recarga">Depositar</button>
+      </div>
+    </section>
+
+    <!-- ============ CARTEIRA ============ -->
+    <section class="view" id="view-wallet">
+      <div class="section-title"><h3>Carteira</h3><span>saldo em tempo real</span></div>
+      <div class="panel" style="text-align:center">
+        <small style="color:var(--muted);text-transform:uppercase;letter-spacing:.12em;font-size:10px">Saldo disponível</small>
+        <div style="font-size:34px;font-weight:900;color:var(--gold-soft);margin:6px 0 2px" id="walletBalance">R$ 0,00</div>
+        <button class="btn" data-action="deposit">Depositar via Pix</button>
+      </div>
+      <div class="stats">
+        <div class="stat"><b id="statSpins">0</b><small>Giros</small></div>
+        <div class="stat"><b id="statWins">0</b><small>Vitórias</small></div>
+        <div class="stat"><b id="statBest">R$ 0</b><small>Maior prêmio</small></div>
+      </div>
+      <div class="panel">
+        <h4>Histórico</h4>
+        <p id="history">Nenhuma jogada ainda. Escolha um jogo e boa sorte! 🍀</p>
+      </div>
+    </section>
+
+    <!-- ============ PERFIL ============ -->
+    <section class="view" id="view-profile">
+      <div class="section-title"><h3>Meu perfil</h3><span>nível ouro</span></div>
+      <div class="panel" style="display:flex;align-items:center;gap:14px">
+        <img class="avatar fg-no-enhance" style="width:58px;height:58px" src="img/mascote.png" alt="Avatar">
+        <div>
+          <h4 style="margin:0">Jogador FortuneGo</h4>
+          <p>Membro desde outubro de 2026</p>
+        </div>
+      </div>
+      <div class="panel">
+        <h4>⚙️ Preferências</h4>
+        <p>Efeitos sonoros, vibração e animações podem ser ajustados pelo botão 🔊 no topo.</p>
+        <button class="btn ghost" data-action="reset">Zerar progresso</button>
+      </div>
+      <div class="panel">
+        <h4>🛡️ Jogo responsável</h4>
+        <p>Defina limites de tempo e de depósito. Este app é uma demonstração técnica — nenhum valor real é movimentado.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <nav class="nav" id="nav">
+    <button class="on" data-view="home"><i>🏠</i>Início</button>
+    <button data-view="promo"><i>🎁</i>Promoções</button>
+    <button data-view="wallet"><i>💳</i>Carteira</button>
+    <button data-view="profile"><i>👤</i>Perfil</button>
+  </nav>
+
+  <!-- Modal do jogo -->
+  <div class="modal" id="gameModal">
+    <div class="sheet">
+      <div class="sheet-grip"></div>
+      <div class="sheet-head">
+        <img id="mGameIcon" src="" alt="">
+        <div style="flex:1">
+          <h3 id="mGameName">Jogo</h3>
+          <small id="mGameInfo">RTP 96% · Volatilidade média</small>
+        </div>
+        <button class="icon-btn" id="closeModal" aria-label="Fechar">✕</button>
+      </div>
+
+      <div class="reels" id="reels">
+        <div class="reel"><div class="strip"></div></div>
+        <div class="reel"><div class="strip"></div></div>
+        <div class="reel"><div class="strip"></div></div>
+      </div>
+
+      <div class="result" id="result">Faça sua aposta e gire!</div>
+
+      <div class="bet-row">
+        <span class="label">Aposta</span>
+        <div class="stepper">
+          <button id="betMinus">−</button>
+          <b id="betValue">R$ 5</b>
+          <button id="betPlus">+</button>
+        </div>
+      </div>
+
+      <button class="spin" id="spinBtn">🎰 Girar</button>
+
+      <div class="paytable">
+        <div><b>3×🐯</b>50×</div>
+        <div><b>3×💎</b>25×</div>
+        <div><b>3×🔔</b>12×</div>
+        <div><b>2 iguais</b>2×</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/fortune-enhance.js"></script>
+  <script src="js/fortune-lobby.js"></script>
+</body>
+</html>
