@@ -10,27 +10,20 @@
   var FG = window.FortuneGo || {};
 
   /* ------------------------------------------------------------------ *
-   * Catálogo. Os DOIS últimos apontam de propósito para caminhos errados
-   * (pasta que não existe, nome em inglês) para provar o motor de resgate:
-   *   - 'images/fortune_tiger_icon.png' → casa com img/tigre.png pelo dicionário PT/EN
-   *   - 'img/jogo-inexistente.png'      → cai no ícone SVG procedural
+   * Catálogo e matemática vêm de fortune-games.js / fortune-slot.js, os
+   * mesmos arquivos que a sala de jogo (game.html) usa. Assim o RTP mostrado
+   * no card é exatamente o RTP calibrado que a máquina vai pagar.
    * ------------------------------------------------------------------ */
-  var GAMES = [
-    { id: 'tigre',   name: 'Tigre da Sorte',    img: 'img/tigre.png',          tag: 'hot',  rtp: 96.8, vol: 'alta'  },
-    { id: 'dragao',  name: 'Dragão de Jade',    img: 'img/dragao.png',         tag: '',     rtp: 97.2, vol: 'média' },
-    { id: 'coelho',  name: 'Coelho da Fortuna', img: 'img/coelho.png',         tag: 'new',  rtp: 96.1, vol: 'baixa' },
-    { id: 'touro',   name: 'Boi Dourado',       img: 'img/touro.png',          tag: 'hot',  rtp: 95.9, vol: 'alta'  },
-    { id: 'panda',   name: 'Panda Real',        img: 'img/panda.png',          tag: '',     rtp: 96.4, vol: 'média' },
-    { id: 'roleta',  name: 'Roleta Imperial',   img: 'img/roleta.png',         tag: 'live', rtp: 97.3, vol: 'baixa' },
-    { id: 'mina',    name: 'Mina de Ouro',      img: 'img/mina-de-ouro.png',   tag: 'new',  rtp: 96.0, vol: 'alta'  },
-    { id: 'aviator', name: 'Aviador Fortune',   img: 'img/aviator.png',        tag: 'hot',  rtp: 97.0, vol: 'alta'  },
-    { id: 'bingo',   name: 'Bingo Imperial',    img: 'img/bingo-imperial.png', tag: 'live', rtp: 95.5, vol: 'média' },
-    { id: 'rato',    name: 'Rato Milionário',   img: 'img/rato.png',           tag: '',     rtp: 96.3, vol: 'média' },
-    { id: 'espaco',  name: 'Astro Multiplier',  img: 'img/espaco.png',         tag: 'new',  rtp: 97.1, vol: 'alta'  },
-    { id: 'futebol', name: 'Pênalti de Ouro',   img: 'img/futebol.png',        tag: 'live', rtp: 96.6, vol: 'média' },
-    { id: 'demo1',   name: 'Fortune Tiger',     img: 'images/fortune_tiger_icon.png', tag: '', rtp: 96.8, vol: 'alta' },
-    { id: 'demo2',   name: 'Jogo Sem Arte',     img: 'img/jogo-inexistente.png',      tag: '', rtp: 95.0, vol: 'baixa' }
-  ];
+  var GAMES = (window.FortuneGames && window.FortuneGames.list) || [];
+
+  var RTP = {};
+  GAMES.forEach(function (g) {
+    try {
+      RTP[g.id] = window.FortuneSlot.math.prepare(g).rtpExact * 100;
+    } catch (e) {
+      RTP[g.id] = g.rtp;
+    }
+  });
 
   /* ------------------------------ Estado ------------------------------ */
 
@@ -173,135 +166,6 @@
     });
   })();
 
-  /* ------------------------- Caça-níquel do modal ------------------------- */
-
-  var SYMBOLS = ['🐯', '💎', '🔔', '🍒', '⭐', '7️⃣', '🪙', '🍋'];
-  var PAY = { '🐯': 50, '💎': 25, '7️⃣': 20, '🔔': 12, '⭐': 10, '🪙': 8, '🍒': 6, '🍋': 5 };
-
-  var modal = $('#gameModal');
-  var spinning = false;
-  var currentGame = GAMES[0];
-
-  function buildStrips() {
-    $$('#reels .strip').forEach(function (strip) {
-      strip.innerHTML = '';
-      for (var i = 0; i < 24; i++) {
-        var cell = document.createElement('div');
-        cell.className = 'cell';
-        cell.textContent = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
-        strip.appendChild(cell);
-      }
-      strip.style.transform = 'translateY(0px)';
-    });
-  }
-
-  function openGame(game) {
-    currentGame = game;
-    $('#mGameName').textContent = game.name;
-    $('#mGameInfo').textContent = 'RTP ' + game.rtp + '% · Volatilidade ' + game.vol;
-    var icon = $('#mGameIcon');
-    icon.alt = game.name;
-    icon.removeAttribute('data-fg');
-    icon.src = game.img;           // se o arquivo não existir, o enhancer gera o ícone
-    $('#result').textContent = 'Faça sua aposta e gire!';
-    $('#result').className = 'result';
-    buildStrips();
-    modal.classList.add('open');
-    if (FG.pushModal) FG.pushModal(closeGame);
-    if (FG.haptic) FG.haptic(12);
-    if (FG.refresh) FG.refresh();
-  }
-
-  function closeGame() {
-    modal.classList.remove('open');
-  }
-
-  function spin() {
-    if (spinning) return;
-    if (state.balance < state.bet) {
-      if (FG.toast) FG.toast('Saldo insuficiente — faça um depósito 💳');
-      return;
-    }
-
-    spinning = true;
-    $('#spinBtn').disabled = true;
-    state.balance -= state.bet;
-    state.spins++;
-    renderBalance();
-    if (FG.haptic) FG.haptic(18);
-    if (FG.sound) FG.sound(420, 0.12, 'sawtooth');
-
-    var strips = $$('#reels .strip');
-    var reels = $$('#reels .reel');
-    reels.forEach(function (r) { r.classList.remove('win'); });
-    $('#result').textContent = 'Girando...';
-    $('#result').className = 'result';
-
-    var final = [];
-    strips.forEach(function (strip, i) {
-      var symbol = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
-      final.push(symbol);
-
-      // posiciona o símbolo sorteado na célula de parada
-      var stopIndex = 18 + i;
-      strip.children[stopIndex].textContent = symbol;
-
-      var distance = stopIndex * 92;
-      strip.style.transition = 'none';
-      strip.style.transform = 'translateY(0px)';
-      void strip.offsetWidth; // reflow
-      strip.style.transition = 'transform ' + (1.15 + i * 0.42) + 's cubic-bezier(.17,.67,.24,1.01)';
-      strip.style.transform = 'translateY(' + (-distance) + 'px)';
-
-      setTimeout(function () {
-        if (FG.sound) FG.sound(640 + i * 90, 0.07, 'square');
-        if (FG.haptic) FG.haptic(9);
-      }, (1.15 + i * 0.42) * 1000);
-    });
-
-    setTimeout(function () { settle(final); }, (1.15 + 2 * 0.42) * 1000 + 180);
-  }
-
-  function settle(final) {
-    var reels = $$('#reels .reel');
-    var result = $('#result');
-    var counts = {};
-    final.forEach(function (s) { counts[s] = (counts[s] || 0) + 1; });
-
-    var triple = Object.keys(counts).filter(function (k) { return counts[k] === 3; })[0];
-    var pair = Object.keys(counts).filter(function (k) { return counts[k] === 2; })[0];
-    var prize = 0;
-
-    if (triple) prize = state.bet * (PAY[triple] || 10);
-    else if (pair) prize = state.bet * 2;
-
-    if (prize > 0) {
-      state.balance += prize;
-      state.wins++;
-      state.best = Math.max(state.best, prize);
-      state.history.unshift(currentGame.name + ' · ' + final.join(' ') + ' · +' + money(prize));
-      result.textContent = (triple ? '🎉 TRINCA! ' : '✨ Par! ') + 'Você ganhou ' + money(prize);
-      result.className = 'result win';
-      reels.forEach(function (r) { r.classList.add('win'); });
-      if (FG.confetti) FG.confetti();
-      if (FG.sound) {
-        [660, 880, 1100, 1320].forEach(function (f, i) {
-          setTimeout(function () { FG.sound(f, 0.16, 'sine'); }, i * 110);
-        });
-      }
-    } else {
-      state.history.unshift(currentGame.name + ' · ' + final.join(' ') + ' · −' + money(state.bet));
-      result.textContent = 'Quase! Tente de novo 🍀';
-      result.className = 'result lose';
-    }
-
-    state.history = state.history.slice(0, 12);
-    renderBalance();
-    save();
-    spinning = false;
-    $('#spinBtn').disabled = false;
-  }
-
   /* ------------------------------ Eventos ------------------------------ */
 
   // abrir jogo / favoritar (delegação para funcionar com a grade redesenhada)
@@ -320,26 +184,13 @@
     }
     var card = e.target.closest('[data-game]');
     if (card) {
-      var game = GAMES.filter(function (g) { return g.id === card.getAttribute('data-game'); })[0];
-      if (game) openGame(game);
+      var id = card.getAttribute('data-game');
+      if (FG.haptic) FG.haptic(14);
+      if (FG.sound) FG.sound(680, 0.07, 'triangle');
+      card.classList.add('opening');
+      save();
+      setTimeout(function () { location.href = 'game.html?id=' + encodeURIComponent(id); }, 140);
     }
-  });
-
-  $('#spinBtn').addEventListener('click', spin);
-  $('#closeModal').addEventListener('click', function () { closeGame(); if (FG.popModal) FG.popModal(); });
-  modal.addEventListener('click', function (e) {
-    if (e.target === modal) { closeGame(); if (FG.popModal) FG.popModal(); }
-  });
-
-  $('#betMinus').addEventListener('click', function () {
-    state.bet = Math.max(1, state.bet - (state.bet > 20 ? 10 : 1));
-    $('#betValue').textContent = 'R$ ' + state.bet;
-    save(); if (FG.haptic) FG.haptic(8);
-  });
-  $('#betPlus').addEventListener('click', function () {
-    state.bet = Math.min(500, state.bet + (state.bet >= 20 ? 10 : 1));
-    $('#betValue').textContent = 'R$ ' + state.bet;
-    save(); if (FG.haptic) FG.haptic(8);
   });
 
   $('#chips').addEventListener('click', function (e) {
@@ -430,11 +281,9 @@
   /* ------------------------------- Boot ------------------------------- */
 
   shownBalance = 0;
-  $('#betValue').textContent = 'R$ ' + state.bet;
   $('#soundBtn').textContent = (FG.soundEnabled && !FG.soundEnabled()) ? '🔇' : '🔊';
   renderGrid();
   renderBalance();
-  buildStrips();
 
   window.addEventListener('fortune:native-ready', function () {
     if (window.FortuneNative && window.FortuneNative.platform) {

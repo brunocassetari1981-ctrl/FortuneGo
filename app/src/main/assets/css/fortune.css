@@ -319,3 +319,10 @@ body::before {
 .view { display: none; }
 .view.on { display: block; animation: slideIn .32s ease; }
 @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+/* feedback ao abrir a sala de jogo */
+.game.opening {
+  transform: scale(0.94);
+  opacity: 0.65;
+  transition: transform 0.14s ease, opacity 0.14s ease;
+}

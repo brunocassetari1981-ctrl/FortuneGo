@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0B0712">
+  <title>FortuneGo — Jogo</title>
+  <link rel="stylesheet" href="css/fortune.css">
+  <link rel="stylesheet" href="css/fortune-game.css">
+</head>
+<body class="gm-body">
+
+  <header class="gm-top">
+    <button class="gm-back" id="backBtn" aria-label="Voltar ao lobby">←</button>
+    <div class="gm-ident">
+      <img id="gIcon" class="fg-no-enhance" src="" alt="">
+      <div>
+        <b id="gName">Carregando…</b>
+        <small id="gMeta"></small>
+      </div>
+    </div>
+    <div class="gm-bal">
+      <small>Saldo</small>
+      <b id="gBalance">R$ 0,00</b>
+    </div>
+  </header>
+
+  <main class="gm-stage">
+    <div class="gm-machine">
+
+      <div class="gm-marquee" id="marquee">
+        <span class="gm-rtp" id="rtpLabel"></span>
+        <span class="gm-fs">🎁 GIROS GRÁTIS <b id="fsLeft">0</b> · <span id="fsMult">2×</span></span>
+      </div>
+
+      <div class="gm-frame" id="frame">
+        <div class="gm-reels" id="reels"></div>
+        <svg class="gm-lines" id="lines" viewBox="0 0 300 300" preserveAspectRatio="none" aria-hidden="true"></svg>
+      </div>
+
+      <div class="gm-winbar" id="winbar">Faça sua aposta e gire! 🍀</div>
+    </div>
+  </main>
+
+  <footer class="gm-controls">
+    <div class="gm-side">
+      <button class="gm-mini" id="payBtn" aria-label="Tabela de prêmios">ⓘ</button>
+      <button class="gm-mini" id="turboBtn" aria-label="Modo turbo">⚡</button>
+    </div>
+
+    <div class="gm-bet">
+      <span class="gm-bet-label">Aposta</span>
+      <div class="gm-stepper">
+        <button id="betDown" aria-label="Diminuir aposta">−</button>
+        <b id="betVal">R$ 5</b>
+        <button id="betUp" aria-label="Aumentar aposta">+</button>
+      </div>
+      <button class="gm-auto" id="autoBtn">AUTO</button>
+    </div>
+
+    <button class="gm-spin" id="spinBtn">
+      <span class="ic">🎰</span>
+      <span id="spinLabel">GIRAR</span>
+    </button>
+  </footer>
+
+  <!-- menu do giro automático -->
+  <div class="gm-autobox" id="autoBox">
+    <button data-auto="10">10 giros</button>
+    <button data-auto="25">25 giros</button>
+    <button data-auto="50">50 giros</button>
+    <button data-auto="-1">∞ até parar</button>
+  </div>
+
+  <!-- tabela de prêmios -->
+  <div class="gm-sheet" id="paysheet">
+    <div class="gm-sheet-card">
+      <h3 id="ptTitle">Tabela de prêmios</h3>
+      <p class="sub" id="ptSub"></p>
+      <div class="gm-pay" id="ptGrid"></div>
+      <div class="gm-rule" id="ptRules"></div>
+      <button class="gm-close" id="ptClose">Entendi</button>
+    </div>
+  </div>
+
+  <!-- celebração -->
+  <div class="gm-bigwin" id="bigwin">
+    <div class="kind" id="bwKind">GRANDE VITÓRIA</div>
+    <div class="amount" id="bwAmount">R$ 0,00</div>
+    <div class="mult" id="bwMult"></div>
+    <div class="tap">toque para continuar</div>
+  </div>
+
+  <script src="js/fortune-enhance.js"></script>
+  <script src="js/fortune-games.js"></script>
+  <script src="js/fortune-slot.js"></script>
+  <script src="js/fortune-game.js"></script>
+</body>
+</html>

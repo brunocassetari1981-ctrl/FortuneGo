@@ -57,6 +57,12 @@ jobs:
       - name: Testar motor de resgate de imagens
         run: node tools/test-matcher.js
 
+      - name: Testar matemática dos jogos (RTP calibrado)
+        run: node tools/test-slot.js
+
+      - name: Smoke test da sala de jogo (DOM simulado)
+        run: node tools/test-ui-smoke.js
+
       - name: Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
