@@ -90,10 +90,23 @@ jobs:
             echo "tamanho: $(du -h FortuneGo-debug.apk | cut -f1)"
             echo "imagens empacotadas: $(unzip -l FortuneGo-debug.apk | grep -cE 'assets/img/.*\.(png|webp)')"
             echo "---"
-            unzip -l FortuneGo-debug.apk | grep -E 'assets/(index\.html|js/|css/|img/manifest)' || true
+            unzip -l FortuneGo-debug.apk | grep -E 'assets/([^/]*\.html|js/|css/|img/manifest)' || true
             echo '```'
           } > apk-report.md
           cat apk-report.md
+
+          # Portão: sem qualquer um destes o app abre quebrado no celular.
+          for f in assets/index.html assets/game.html \
+                   assets/js/fortune-enhance.js assets/js/fortune-games.js \
+                   assets/js/fortune-slot.js assets/js/fortune-game.js \
+                   assets/js/fortune-lobby.js \
+                   assets/css/fortune.css assets/css/fortune-game.css; do
+            if unzip -l FortuneGo-debug.apk | grep -qE "[[:space:]]$f\$"; then
+              echo "ok   $f"
+            else
+              echo "FALTA $f no APK"; exit 1
+            fi
+          done
 
       - name: Subir APK como artefato
         uses: actions/upload-artifact@v4
