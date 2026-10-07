@@ -126,6 +126,26 @@
     marqueeTimer = setTimeout(function () { bar.classList.remove('win'); }, turbo ? 1400 : 3200);
   }
 
+  /* ------------------------- O PERSONAGEM -------------------------
+     Ele reage ao que acontece: inclina ao girar, pula ao ganhar, festeja
+     na vitória grande e responde ao toque. As classes vivem no CSS; aqui
+     só decidimos QUANDO trocar. */
+  var mascotTimer = null;
+
+  function mascot(estado) {
+    var el = $('#gMascot');
+    if (!el || !el.classList) return;
+    clearTimeout(mascotTimer);
+    el.classList.remove('spinning', 'cheer', 'party', 'poke');
+    if (!estado) return;
+    // reinicia a animação mesmo se a classe for a mesma de antes
+    if (el.offsetWidth !== undefined) { var _ = el.offsetWidth; }
+    el.classList.add(estado);
+    if (estado === 'cheer' || estado === 'poke') {
+      mascotTimer = setTimeout(function () { el.classList.remove(estado); }, 1000);
+    }
+  }
+
   function sound(f, d, t) { if (FG.sound) FG.sound(f, d, t); }
   function haptic(ms) { if (FG.haptic) FG.haptic(ms); }
 
@@ -227,43 +247,116 @@
 
   /* ----------------------------- Destaque de ganho ----------------------------- */
 
+  /** Moedinhas subindo de cada célula premiada. Posicionadas em relação à
+      moldura, e não ao rolo, porque o rolo corta o que passa da borda. */
+  function popCoins(cells) {
+    var frame = $('#frame');
+    if (!frame || !frame.getBoundingClientRect || !frame.appendChild) return;
+    var base = frame.getBoundingClientRect();
+    if (!base.width) return;
+
+    var total = 0;
+    cells.forEach(function (el, i) {
+      if (total > 14 || !el.getBoundingClientRect) return;
+      var r = el.getBoundingClientRect();
+      var n = turbo ? 1 : 2;
+      for (var k = 0; k < n; k++) {
+        total++;
+        var moeda = document.createElement('div');
+        moeda.className = 'gm-pop';
+        moeda.style.left = (r.left - base.left + r.width * (0.3 + Math.random() * 0.4)) + 'px';
+        moeda.style.top = (r.top - base.top + r.height * 0.55) + 'px';
+        moeda.style.animationDelay = (i * 55 + k * 110 + Math.random() * 80) + 'ms';
+        frame.appendChild(moeda);
+        (function (m) {
+          setTimeout(function () { if (m.parentNode) m.parentNode.removeChild(m); }, 1500);
+        }(moeda));
+      }
+    });
+  }
+
   function highlight(wins) {
     var winning = {};
     wins.forEach(function (w) {
       w.cells.forEach(function (cell) { winning[cell[0] + ':' + cell[1]] = true; });
     });
+    var premiadas = [];
     for (var col = 0; col < c.cols; col++) {
       for (var row = 0; row < c.rowsPer[col]; row++) {
         var el = view.cellAt(col, row);
         if (!el) continue;
-        if (winning[col + ':' + row]) el.classList.add('win');
+        if (winning[col + ':' + row]) { el.classList.add('win'); premiadas.push(el); }
         else el.classList.add('dim');
       }
     }
     view.root.classList.add('has-win');
+    popCoins(premiadas);
   }
 
   /* ------------------------------ Grande vitória ------------------------------ */
+
+  /** Barras de equalizador: alturas e ritmos diferentes, como no original. */
+  function buildEq() {
+    var eq = $('#bwEq');
+    if (!eq || eq.children.length) return;
+    for (var i = 0; i < 17; i++) {
+      var b = document.createElement('i');
+      b.style.animationDelay = (Math.random() * 500) + 'ms';
+      b.style.animationDuration = (380 + Math.random() * 320) + 'ms';
+      eq.appendChild(b);
+    }
+  }
+
+  /** Chuva de moedas caindo pela tela inteira. */
+  function coinRain(n) {
+    var box = $('#bigwin');
+    if (!box || !box.appendChild) return;
+    for (var i = 0; i < n; i++) {
+      var m = document.createElement('div');
+      m.className = 'gm-rain';
+      m.style.left = (Math.random() * 96) + '%';
+      m.style.animationDuration = (1500 + Math.random() * 1400) + 'ms';
+      m.style.animationDelay = (Math.random() * 900) + 'ms';
+      var tam = 11 + Math.random() * 13;
+      m.style.width = m.style.height = tam + 'px';
+      box.appendChild(m);
+      (function (el) {
+        setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 3400);
+      }(m));
+    }
+  }
 
   function bigWin(amount, ratio) {
     var box = $('#bigwin');
     var face = $('#bwFace');
     if (face) face.src = c.all[c.wildIndex].img || '';
     box.classList.toggle('mega', ratio >= 40);
-    $('#bwKind').textContent = ratio >= 100 ? 'JACKPOT!' : (ratio >= 40 ? 'MEGA VITÓRIA' : 'GRANDE VITÓRIA');
+
+    var titulo = ratio >= 100 ? 'JACKPOT!' : (ratio >= 40 ? 'MEGA WIN' : 'BIG WIN');
+    var kind = $('#bwKind');
+    kind.textContent = titulo;
+    if (kind.setAttribute) kind.setAttribute('data-text', titulo);   // contorno grosso
+
     $('#bwMult').textContent = ratio.toFixed(1).replace('.', ',') + '× a sua aposta';
     $('#bwAmount').textContent = money(0);
     box.classList.add('on');
-    animateTo($('#bwAmount'), 0, amount, 1100, money);
+    buildEq();
+    animateTo($('#bwAmount'), 0, amount, 1400, money);
+    coinRain(ratio >= 40 ? 38 : 22);
     if (FG.confetti) FG.confetti();
-    [660, 880, 1100, 1320, 1560].forEach(function (f, i) {
-      setTimeout(function () { sound(f, 0.17, 'sine'); }, i * 120);
+
+    /* acorde ascendente, não bipes soltos */
+    [523, 659, 784, 1047, 1319].forEach(function (f, i) {
+      setTimeout(function () { sound(f, 0.22, 'sine'); }, i * 110);
     });
+    setTimeout(function () { sound(1568, 0.5, 'sine'); }, 620);
+
     document.body.classList.add('shake');
     setTimeout(function () { document.body.classList.remove('shake'); }, 620);
-    var close = function () { box.classList.remove('on'); };
+
+    var close = function () { box.classList.remove('on'); mascot(null); };
     box.onclick = close;
-    setTimeout(close, 2800);
+    setTimeout(close, ratio >= 40 ? 4200 : 3400);
   }
 
   /* --------------------------------- O giro --------------------------------- */
@@ -318,6 +411,7 @@
 
     haptic(16);
     sound(380, 0.1, 'sawtooth');
+    mascot('spinning');
 
     var res = M.spin(c);
 
@@ -363,11 +457,13 @@
 
       setWinbar((isFree ? '🎁 ' : '') + 'GANHOU ' + money(amount), 'win');
       setMarqueeWin(amount);
+      mascot(ratio >= 15 ? 'party' : 'cheer');
       renderBalance();
       if (FG.hapticWin) FG.hapticWin(); else haptic(40);
       if (ratio >= 15) bigWin(amount, ratio);
       else if (FG.coins) FG.coins(window.innerWidth / 2, window.innerHeight * 0.45, 8);
     } else {
+      mascot(null);
       setWinbar(res.scatters === 2 ? 'Quase! Faltou 1 scatter 😮' : 'Não foi dessa vez 🍀', '');
       if (!isFree) {
         state.history.unshift(game.name + ' · −' + money(betNow()));
@@ -497,19 +593,34 @@
   /* --------------------------------- Layout --------------------------------- */
 
   /**
-   * As colunas laterais têm 3 posições e a do meio 4. Mantemos a célula
-   * quadrada: a altura dos rolos é 3 células e a coluna central, centrada,
-   * transborda meia célula para cima e para baixo — exatamente o degrau que
-   * aparece no jogo original. O CSS usa --cell para reservar esse espaço.
+   * Geometria medida nos prints do jogo original: a célula é mais LARGA do
+   * que alta — 178x133 no Fortune Rabbit 2 e 185x147 no Fortune Snake, ou
+   * seja, altura ≈ 0,78 da largura. Com célula quadrada os rolos ficavam
+   * compridos demais.
+   *
+   * As colunas laterais têm 3 posições e a do meio 4; a central é centrada e
+   * transborda meia célula para cima e para baixo — o degrau do original.
    */
+  var CELL_RATIO = 0.78;
+
   function layout() {
     var reels = $('#reels');
     if (!reels) return;
     var w = reels.clientWidth;
     if (!w) return;
-    var cell = Math.round(w / c.cols);
+    var colW = w / c.cols;
+    var cell = Math.round(colW * CELL_RATIO);
+
+    // não deixa a máquina estourar a altura disponível do palco
+    var stage = $('.fr-stage');
+    if (stage && stage.clientHeight) {
+      var teto = Math.floor((stage.clientHeight - 150) / 4);   // 4 = rolo central
+      if (teto > 40 && cell > teto) cell = teto;
+    }
+
     reels.style.height = (cell * 3) + 'px';
     $('#frame').style.setProperty('--cell', cell + 'px');
+    document.body.style.setProperty('--cell', cell + 'px');
     if (view) view.measure();
   }
 
@@ -523,6 +634,15 @@
 
     $('#spinBtn').addEventListener('click', function () { doSpin(false); });
     $('#bonusBtn').addEventListener('click', toggleBonus);
+
+    // cutucar o personagem: ele reage
+    $('#gMascot').addEventListener('click', function () {
+      if (busy) return;
+      mascot('poke');
+      haptic(12);
+      sound(620 + Math.random() * 260, 0.07, 'triangle');
+      if (FG.coins) FG.coins(window.innerWidth * 0.72, window.innerHeight * 0.2, 4);
+    });
 
     $('#betDown').addEventListener('click', function () {
       if (busy || freeLeft) return;

@@ -245,6 +245,25 @@ function run(file) {
   ok([0, 1, 2].every(function (i) { return tira(i) === esperado(i); }),
     'rolos com 3, 4 e 3 posições (obtido ' + [tira(0), tira(1), tira(2)].map(function (n) { return n - 2; }) + ')');
   ok(reels.children[1].getAttribute('data-rows') === '4', 'o rolo central é o mais alto');
+
+  /* Proporção da célula: medida nos prints do jogo original, a altura é
+     ~0,78 da largura. Com célula quadrada os rolos ficavam compridos. */
+  var cellPx = parseFloat(registry.frame.style.getPropertyValue('--cell'));
+  var colW = reels.clientWidth / 3;
+  var razao = cellPx / colW;
+  ok(Math.abs(razao - 0.78) < 0.03,
+    'célula mais larga que alta, como no original (altura/largura = ' + razao.toFixed(2) + ')');
+
+  /* Velocidade do giro: a 26 células/s virava borrão. Tem de ficar numa
+     faixa em que dê para ver os símbolos passando. */
+  var vmax = 0;
+  (function () {
+    var code = fs.readFileSync(path.join(ASSETS, 'js/fortune-slot.js'), 'utf8');
+    var m = /var SPEED = ([\d.]+)/.exec(code);
+    vmax = m ? parseFloat(m[1]) * 1000 : 0;
+  }());
+  ok(vmax >= 6 && vmax <= 13,
+    'giro visível: ' + vmax.toFixed(1) + ' células/s (faixa aceita 6 a 13)');
   ok(registry.gName.textContent === 'Tigre da Sorte', 'título veio do id da URL (?id=tigre)');
   ok(/RTP 96,/.test(registry.rtpLabel.textContent), 'RTP calibrado aparece no topo: ' + registry.rtpLabel.textContent);
   ok(registry.lines.children.length === 10, '10 linhas de pagamento desenhadas no SVG');
@@ -257,6 +276,8 @@ function run(file) {
 
   ok(registry.spinBtn.disabled === true, 'botão trava durante o giro');
   ok(registry.winbar.textContent.indexOf('Girando') !== -1, 'barra mostra "Girando…"');
+  ok(registry.gMascot.classList.contains('spinning'),
+    'o personagem reage ao giro (classe spinning)');
 
   await flush();
 
@@ -287,6 +308,11 @@ function run(file) {
   ok(fim.history.length > 0 && fim.history.length <= 12, 'histórico limitado a 12 linhas (' + fim.history.length + ')');
   ok([0, 1, 2].every(function (i) { return tira(i) === esperado(i); }),
     'os 3 rolos continuam do tamanho certo após 61 giros');
+
+  /* ---- o personagem responde ao toque ---- */
+  registry.gMascot.fire('click');
+  ok(registry.gMascot.classList.contains('poke'), 'tocar no personagem dispara a reação');
+  await flush();
 
   /* ---- aposta ---- */
   registry.betUp.fire('click');

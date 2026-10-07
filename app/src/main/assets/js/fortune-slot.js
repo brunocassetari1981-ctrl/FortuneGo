@@ -357,8 +357,13 @@
    * ====================================================================== */
 
   var BUFFER = 2;      // células extras fora da janela (1 acima, 1 abaixo)
-  var SPEED = 0.026;   // alturas de célula por milissegundo (~26 células/s)
-  var SPEED_TURBO = 0.042;
+  /* Velocidade em alturas de célula por milissegundo. A 26 células/s (o valor
+     anterior) o símbolo trocava a cada 1,5 quadro e o rolo virava um borrão —
+     não dava para ver as figuras girando. A 9/s cada símbolo fica ~6 quadros
+     na tela, que é o ritmo dos jogos originais. */
+  var SPEED = 0.009;
+  var SPEED_TURBO = 0.016;
+  var BRAKE = 3;       // a frenagem cobre os 3 últimos símbolos, igual em todo rolo
 
   function now() {
     return (window.performance && performance.now) ? performance.now() : Date.now();
@@ -469,6 +474,24 @@
 
   /**
    * Gira até a grade informada.
+   *
+   * O ciclo de cada rolo:
+   *   acelera (200 ms) → gira solto → engata a fila do resultado →
+   *   freia pelos 3 últimos símbolos → encaixa exato.
+   *
+   * Duas decisões importantes para o giro sair liso:
+   *
+   * 1. A frenagem cobre SEMPRE a mesma distância (BRAKE células) em todos os
+   *    rolos, e só começa quando a tira acabou de cruzar uma borda de célula.
+   *    Assim a duração da frenagem é idêntica nos três e a ordem de parada
+   *    (esquerda → direita) nunca inverte — mesmo com o rolo do meio tendo
+   *    uma posição a mais.
+   *
+   * 2. A duração é calculada para que a velocidade NO INÍCIO da frenagem seja
+   *    exatamente a velocidade do giro solto (a derivada do easeOutCubic em
+   *    t=0 vale 3·d/T, daí T = 3·d/v). Sem isso há um salto visível no momento
+   *    em que o rolo começa a parar.
+   *
    * @param {Array}  grid  resultado já sorteado pela matemática
    * @param {object} opts  {turbo, anticipate, onStop(col)}
    * @returns {Promise}
@@ -482,39 +505,44 @@
     this.measure();
     if (!this.cellH) this.cellH = 80;      // layout ainda não mediu: valor de reserva
 
-    var runMs = turbo ? 240 : 560;          // giro livre antes do 1º rolo frear
-    var stagger = turbo ? 120 : 280;        // atraso entre rolos
-    var fillers = turbo ? 1 : 3;            // células de folga durante a frenagem
+    var runMs = turbo ? 180 : 300;         // giro solto antes de engatar a fila
+    var stagger = turbo ? 100 : 200;       // atraso entre rolos
     var vmax = turbo ? SPEED_TURBO : SPEED;
+    var maxRows = Math.max.apply(null, this.c.rowsPer);
 
     return new Promise(function (resolve) {
       var pending = self.c.cols;
+      var t0 = now();
 
       self.reels.forEach(function (r, col) {
         r.phase = 'accel';
         r.speed = 0;
         r.accelT = 0;
         r.queue = null;
+        r.wantStop = false;
+        r.vmax = vmax;
         r.el.classList.add('spinning');
 
         var extra = (col === self.c.cols - 1 && opts.anticipate) ? (turbo ? 600 : 1400) : 0;
         if (extra) r.el.classList.add('anticipate');
+        r.stopAt = t0 + runMs + col * stagger + extra;
 
-        r.vmax = vmax;
-        r.stopAt = now() + runMs + col * stagger + extra;
-        r.onDone = function () {
-          r.el.classList.remove('spinning', 'anticipate');
-          r.el.classList.add('landed');
-          setTimeout(function () { r.el.classList.remove('landed'); }, 240);
-          if (opts.onStop) opts.onStop(col);
-          if (--pending === 0) resolve();
-        };
-        // fila de entrada: folgas para a frenagem + o resultado, de baixo para cima
+        /* Fila de entrada, de baixo para cima. Os rolos mais baixos ganham
+           células de folga a mais, para que TODOS tenham a mesma fila — é o
+           que mantém a frenagem sincronizada. */
         var q = [];
-        for (var k = 0; k < fillers; k++) q.push(drawSymbol(self.c, Math.random));
+        for (var k = 0; k < maxRows - r.rows; k++) q.push(drawSymbol(self.c, Math.random));
         for (var row = r.rows - 1; row >= 0; row--) q.push(grid[col][row]);
         q.push(drawSymbol(self.c, Math.random));
         r.pendingQueue = q;
+
+        r.onDone = function () {
+          r.el.classList.remove('spinning', 'anticipate', 'fast');
+          r.el.classList.add('landed');
+          setTimeout(function () { r.el.classList.remove('landed'); }, 260);
+          if (opts.onStop) opts.onStop(col);
+          if (--pending === 0) resolve();
+        };
       });
 
       self.start();
@@ -537,6 +565,7 @@
         if (r.phase === 'idle') continue;
         active++;
 
+        /* ---------------- aceleração ---------------- */
         if (r.phase === 'accel') {
           r.accelT += dt;
           var a = Math.min(1, r.accelT / 200);
@@ -544,49 +573,64 @@
           if (a >= 1) r.phase = 'run';
         }
 
-        if ((r.phase === 'accel' || r.phase === 'run') && t >= r.stopAt) {
-          // entra na frenagem: distância exata até encaixar o resultado
-          r.queue = r.pendingQueue.slice();
-          r.target = r.queue.length * self.cellH - r.pos;
-          r.travelled = 0;
-          r.t0 = t;
-          // duração tal que a velocidade inicial da frenagem seja EXATAMENTE a
-          // velocidade atual (derivada do easeOutCubic em t=0 é 3*d/T)
-          var vpx = Math.max(1e-4, r.speed * self.cellH);
-          r.decel = Math.min(1600, Math.max(240, 3 * r.target / vpx));
-          r.phase = 'stop';
+        /* ---------------- giro solto ---------------- */
+        if (r.phase === 'accel' || r.phase === 'run') {
+          if (!r.wantStop && t >= r.stopAt) {
+            r.wantStop = true;
+            r.queue = r.pendingQueue.slice();   // a partir daqui entra o resultado
+          }
+
+          r.pos += r.speed * dt * self.cellH;
+
+          var cruzou = false;
+          while (self.cellH > 0 && r.pos >= self.cellH) {
+            r.pos -= self.cellH;
+            cruzou = true;
+            self.recycle(r, (r.queue && r.queue.length)
+              ? r.queue.shift()
+              : drawSymbol(self.c, Math.random));
+          }
+
+          /* Entra na frenagem só logo depois de cruzar uma borda, e só quando
+             restarem exatamente BRAKE células do resultado: assim a distância
+             é a mesma em todos os rolos e o encaixe cai certo. */
+          if (cruzou && r.queue && r.queue.length <= BRAKE) {
+            r.target = r.queue.length * self.cellH - r.pos;
+            r.travelled = 0;
+            r.t0 = t;
+            var vpx = Math.max(1e-4, r.speed * self.cellH);
+            r.decel = Math.min(1800, Math.max(220, 3 * r.target / vpx));
+            r.phase = 'stop';
+          }
         }
 
+        /* ---------------- frenagem ---------------- */
         if (r.phase === 'stop') {
           var p = Math.min(1, (t - r.t0) / r.decel);
-          var eased = 1 - Math.pow(1 - p, 3);            // desacelera suave
+          var eased = 1 - Math.pow(1 - p, 3);
           var want = r.target * eased;
-          var delta = want - r.travelled;
+          r.pos += want - r.travelled;
           r.travelled = want;
-          r.pos += delta;
+
           while (self.cellH > 0 && r.pos >= self.cellH && r.queue.length) {
             r.pos -= self.cellH;
             self.recycle(r, r.queue.shift());
           }
+
+          r.speed = (3 * r.target * Math.pow(1 - p, 2) / r.decel) / self.cellH;
+
           if (p >= 1) {
-            r.pos = 0;
             while (r.queue.length) self.recycle(r, r.queue.shift());
+            r.pos = 0;
             r.phase = 'idle';
             r.speed = 0;
             self.place(r);
             r.onDone();
             continue;
           }
-        } else {
-          r.pos += r.speed * dt * self.cellH;
-          while (self.cellH > 0 && r.pos >= self.cellH) {
-            r.pos -= self.cellH;
-            self.recycle(r, drawSymbol(self.c, Math.random));
-          }
         }
 
-        if (r.phase === 'stop') r.speed = (r.target * 3 * Math.pow(1 - Math.min(1, (t - r.t0) / r.decel), 2) / r.decel) / self.cellH;
-        r.el.classList.toggle('fast', r.speed > r.vmax * 0.5);
+        r.el.classList.toggle('fast', r.speed > r.vmax * 0.75);
         self.place(r);
       }
 

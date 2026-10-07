@@ -71,6 +71,9 @@ jobs:
       - name: Testar matemática dos jogos (RTP calibrado)
         run: node tools/test-slot.js
 
+      - name: Testar animação dos rolos (60 fps simulados)
+        run: node tools/test-spin.js
+
       - name: Smoke test da sala de jogo (DOM simulado)
         run: node tools/test-ui-smoke.js
 
