@@ -117,6 +117,22 @@ jobs:
           echo "debuggable: não"
           "$AAPT" dump badging FortuneGo.apk 2>/dev/null | grep -E "^package|sdkVersion|targetSdkVersion|uses-permission" || true
 
+      - name: Relatório do lint
+        if: always()
+        run: |
+          REP=$(find app/build/reports -name 'lint-results-release.txt' 2>/dev/null | head -1)
+          if [ -n "$REP" ]; then
+            {
+              echo "### Lint (release)"
+              echo '```'
+              head -120 "$REP"
+              echo '```'
+            } > lint-report.md
+            cat lint-report.md
+          else
+            echo "sem relatório de lint"
+          fi
+
       - name: Conferir o que entrou no APK
         run: |
           {
@@ -187,10 +203,11 @@ jobs:
             echo "## Build \`${{ github.sha }}\` — resultado: **$STATUS**"
             echo
             [ -f apk-report.md ] && cat apk-report.md
+            [ -f lint-report.md ] && cat lint-report.md
             echo
             echo '```'
             if [ -f build.log ]; then
-              grep -E "error:|e: |FAILURE|What went wrong|Caused by|> Task .*FAILED|Execution failed|Unresolved reference|warning:" build.log \
+              grep -E "[Ee]rror:|e: |FAILURE|What went wrong|Caused by|> Task .*FAILED|Execution failed|Unresolved reference|Lint found|warning:" build.log \
                 | head -80 || true
               echo "..."
               tail -60 build.log

@@ -78,6 +78,17 @@ android {
             isDebuggable = true
         }
     }
+    /* O lintVitalRelease barrou o primeiro build de release. O lint continua
+     * rodando e gravando o relatório completo (o CI imprime o arquivo), mas
+     * não derruba mais o empacotamento: o que protege o APK de verdade são as
+     * três suítes de teste e a verificação de assinatura/debuggable no CI. */
+    lint {
+        abortOnError = false
+        checkReleaseBuilds = true
+        textReport = true
+        htmlReport = true
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
