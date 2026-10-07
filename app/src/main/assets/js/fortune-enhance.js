@@ -680,10 +680,39 @@
     }
     function reset() { if (frame) cancelAnimationFrame(frame); el.style.transform = ''; }
 
-    el.addEventListener('pointerenter', function (e) { if (e.pointerType === 'mouse') tilt(e); });
-    el.addEventListener('pointermove', function (e) { if (e.pointerType === 'mouse' || e.buttons) tilt(e); });
+    /* ------------------------------------------------------------------
+       O inclinar 3D é EXCLUSIVO do rato.
+
+       Antes a condição era `e.pointerType === 'mouse' || e.buttons`, e
+       `e.buttons` vale 1 em QUALQUER toque com o dedo pousado. Resultado:
+       ao arrastar o dedo para rolar a página por cima dos cartões — que
+       ocupam justamente o meio do ecrã — cada pointermove disparava um
+       getBoundingClientRect (layout síncrono forçado) mais uma escrita de
+       transform. A thread principal entupia, a rolagem engasgava e saía
+       aos solavancos, e o cartão ainda inclinava debaixo do dedo, o que
+       dava a sensação de a página não rolar. Rolar só "funcionava" a
+       partir da barra inferior porque ali não há cartão nenhum.
+
+       Toque agora não inclina nada e não bloqueia gesto nenhum.
+       ------------------------------------------------------------------ */
+    var soRato = function (e) { return e.pointerType === 'mouse'; };
+    el.addEventListener('pointerenter', function (e) { if (soRato(e)) tilt(e); });
+    el.addEventListener('pointermove', function (e) {
+      if (soRato(e)) { tilt(e); return; }
+      /* dedo: se saiu do lugar, isto é uma ROLAGEM e não um toque —
+         desfaz o estado de pressionado para o cartão não ficar "preso" */
+      if (arrastou(e)) el.classList.remove('fg-press');
+    });
     el.addEventListener('pointerleave', reset);
+
+    var p0 = null;
+    function arrastou(e) {
+      if (!p0) return false;
+      return Math.abs(e.clientX - p0.x) > 10 || Math.abs(e.clientY - p0.y) > 10;
+    }
+
     el.addEventListener('pointerdown', function (e) {
+      p0 = { x: e.clientX, y: e.clientY };
       el.classList.add('fg-press');
       ripple(el, e.clientX, e.clientY);
       haptic(9);
@@ -691,9 +720,15 @@
     });
     ['pointerup', 'pointercancel'].forEach(function (evt) {
       el.addEventListener(evt, function (e) {
+        var rolou = arrastou(e);
+        p0 = null;
         el.classList.remove('fg-press');
         reset();
-        if (evt === 'pointerup') { coinBurst(e.clientX, e.clientY, 6); blip(1180, 0.1, 'sine'); }
+        /* sem festa de moedas quando o gesto foi rolar, não tocar */
+        if (evt === 'pointerup' && !rolou) {
+          coinBurst(e.clientX, e.clientY, 6);
+          blip(1180, 0.1, 'sine');
+        }
       });
     });
     el.addEventListener('keydown', function (e) {
@@ -769,8 +804,11 @@
       var style = doc.createElement('style');
       style.id = 'fg-layout-style';
       style.textContent =
+        /* Nada de mexer no padding do body aqui. Esta folha é injetada
+           DEPOIS das folhas da página, por isso um `body{padding-bottom:…}`
+           ganhava do `padding-bottom: calc(var(--nav-h) + …)` do lobby e a
+           última fila de cartões ficava escondida debaixo da barra fixa. */
         'html,body{margin:0;padding:0;overflow-x:hidden;-webkit-text-size-adjust:100%;overscroll-behavior-y:contain}' +
-        'body{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}' +
         'img{max-width:100%}*{-webkit-touch-callout:none}';
       (doc.head || doc.documentElement).appendChild(style);
     }

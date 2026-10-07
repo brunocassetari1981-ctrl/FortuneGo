@@ -33,7 +33,13 @@ body {
     radial-gradient(120% 70% at 12% -5%, rgba(225, 29, 72, 0.28) 0%, transparent 55%),
     radial-gradient(100% 60% at 88% 4%, rgba(168, 85, 247, 0.26) 0%, transparent 58%),
     linear-gradient(180deg, #1b0b22 0%, #0b0712 42%, var(--bg) 100%);
-  background-attachment: fixed;
+  /* SEM `background-attachment: fixed`.
+     Num telemóvel isso obriga o motor a repintar o degradado inteiro a cada
+     quadro de rolagem, porque o fundo tem de ficar parado enquanto o conteúdo
+     anda. Era metade do "sobe e desce de uma vez só". O degradado agora rola
+     junto com a página e o efeito visual continua igual, porque o `body`
+     ocupa o ecrã todo. */
+  background-repeat: no-repeat;
   padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 14px);
 }
 
@@ -51,6 +57,11 @@ body::before {
     radial-gradient(2px 2px at 10% 85%, rgba(250, 204, 21, 0.35), transparent);
   animation: drift 14s ease-in-out infinite alternate;
   z-index: 0;
+  /* Camada própria na GPU: os brilhos deixam de ser repintados a cada
+     quadro de rolagem e passam a ser só compostos. */
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 @keyframes drift {
   from { transform: translateY(0) scale(1); opacity: .7; }

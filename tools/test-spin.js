@@ -268,6 +268,67 @@ ok(encaixeOk, 'os 25 giros encaixaram a grade certa, um por um');
 ok(viewL.reels[1].rows === 4 && viewL.reels[1].strip.children.length === 6,
   'o rolo central roda com 4 posições visíveis (+2 de folga)');
 
+/* ----------------------------------------------------------------------
+   8. REGRESSÃO — o tamanho da célula não pode mudar no meio do giro.
+
+   O defeito: o ResizeObserver disparava durante a jogada e o `measure()`
+   reescrevia o `cellH`. Como o `r.pos` já vinha acumulado contra o valor
+   antigo, o `translateY(pos − cellH)` dava um salto e atirava a tira para
+   fora da janela — o rolo aparecia COMPLETAMENTE VAZIO por instantes.
+   ---------------------------------------------------------------------- */
+var viewR = novaVista(c);
+delete viewR.measure;                      // queremos o comportamento real
+viewR.cellH = 0;
+viewR.cellTravada = false;
+var escritos = [];
+viewR.root.style.setProperty = function (k, v) { if (k === '--cell') escritos.push(v); };
+viewR.setCell(CELL, true);                 // a sala dita o tamanho
+
+var cellDurante = [];
+var vaoAberto = false;                     // alguma vez faltou símbolo na janela?
+var topoDescolado = false;                 // a tira alguma vez deixou buraco em cima
+var injetou = false;
+
+var pR = viewR.spinTo(M.drawGrid(c, rng), { turbo: false, onStop: function () {} });
+var passo = 0;
+while (passo++ < 4000) {
+  var lote = rafQueue; rafQueue = [];
+  if (!lote.length) break;
+  clock += 1000 / 60;
+  lote.forEach(function (fn) { fn(clock); });
+
+  /* a meio do giro, finge um ResizeObserver a gritar outro tamanho */
+  if (passo === 15 && !injetou) { injetou = true; viewR.setCell(37, true); }
+
+  /* só interessa o que acontece ENQUANTO há rolo a andar */
+  if (viewR.reels.some(function (r) { return r.phase !== 'idle'; })) {
+    cellDurante.push(viewR.cellH);
+  }
+  viewR.reels.forEach(function (r) {
+    var topo = r.pos - viewR.cellH;
+    var fundo = topo + r.strip.children.length * viewR.cellH;
+    if (topo > 0.001) topoDescolado = true;                  // sobrou vão por cima
+    if (fundo < r.rows * viewR.cellH - 0.001) vaoAberto = true; // sobrou vão por baixo
+  });
+
+  timers = timers.filter(function (job) {
+    if (job.at <= clock) { job.fn(); return false; }
+    return true;
+  });
+  if (viewR.reels.every(function (r) { return r.phase === 'idle'; })) break;
+}
+await pR;
+
+ok(injetou, 'o teste conseguiu mesmo injetar um resize no meio do giro');
+ok(cellDurante.every(function (v) { return v === CELL; }),
+  'a altura da célula fica congelada durante o giro inteiro (' +
+  cellDurante.filter(function (v, i, a) { return i === 0 || v !== a[i - 1]; }).join(' → ') + ')');
+ok(!vaoAberto, 'a tira cobre a janela em todos os quadros (nunca fica rolo vazio)');
+ok(!topoDescolado, 'a tira nunca descola do topo da janela');
+ok(viewR.cellH === 37, 'o tamanho novo entra assim que os rolos param (ficou ' + viewR.cellH + ')');
+ok(escritos.every(function (v) { return /^\d+px$/.test(v); }),
+  'o --cell é sempre inteiro, nunca quebrado (' + escritos.join(', ') + ')');
+
 console.log('\n' + (fails === 0
   ? '✅ animação dos rolos OK — ordem, encaixe, legibilidade e suavidade'
   : '❌ ' + fails + ' verificação(ões) falharam') + '\n');

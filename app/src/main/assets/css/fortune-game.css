@@ -26,6 +26,14 @@
   --gold-2: #f6c33c;
   --gold-3: #b26a12;
   --cell: 80px;        /* altura de uma posição; o JS mede e reescreve */
+  /* O casco do jogo fica PREGADO ao ecrã.
+     Em fluxo normal, qualquer coisa que cresça durante a jogada empurra a
+     coluna inteira para baixo e os controlos saem pela borda. Preso em
+     `fixed`, o casco mede exatamente o ecrã e NADA o consegue deslocar:
+     o que crescer passa a disputar espaço cá dentro em vez de empurrar
+     tudo para fora. */
+  position: fixed;
+  top: 0; left: 0; right: 0;
   height: 100vh;
   height: 100dvh;
   overflow: hidden;

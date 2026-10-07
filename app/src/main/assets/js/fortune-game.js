@@ -832,7 +832,7 @@
        duas contas divergiam (resize, troca de orientação), abria uma
        fresta entre os símbolos. */
     if (view) {
-      if (view.setCell) view.setCell(cell);
+      if (view.setCell) view.setCell(cell, true);   // true = a sala manda, o DOM não opina
       else view.measure();
     }
   }

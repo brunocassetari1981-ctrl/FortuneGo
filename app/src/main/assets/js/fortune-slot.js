@@ -500,6 +500,8 @@
     this.c = c;
     this.reels = [];
     this.cellH = 0;
+    this.cellTravada = false;   // a sala já ditou o tamanho?
+    this.cellPend = 0;          // tamanho à espera do fim do giro
     this.raf = 0;
     this.build();
   }
@@ -542,15 +544,96 @@
    * orientação, medida tirada antes do layout) para a tira deslizar meio
    * pixel e abrir uma fresta de fundo entre os símbolos.
    */
-  ReelView.prototype.setCell = function (px) {
+  ReelView.prototype.setCell = function (px, daSala) {
     if (!(px > 0)) return;
-    this.cellH = px;
-    this.root.style.setProperty('--cell', px + 'px');
-    for (var i = 0; i < this.reels.length; i++) this.place(this.reels[i]);
+
+    /* SEMPRE inteiro. Um `--cell` quebrado (63,3333px) faz cada célula
+       arredondar para um pixel de ecrã diferente e abre uma fresta de fundo
+       entre um símbolo e o seguinte. Com inteiro, ficam colados. */
+    px = Math.round(px);
+
+    /* A partir do momento em que a sala manda um tamanho, ele é lei:
+       nenhuma medição do DOM volta a mexer nisto. */
+    if (daSala) this.cellTravada = true;
+    if (px === this.cellH) { this.recount(); return; }
+
+    /* NUNCA trocar a altura da célula no meio de um giro.
+       O `r.pos` vai sendo acumulado contra o cellH antigo; se o número muda
+       a meio, o `translateY(pos - cellH)` salta de golpe e atira a tira para
+       fora da janela — é isto que deixava o rolo completamente vazio por
+       instantes. A mudança fica em espera e entra quando os rolos param. */
+    if (this.girando()) { this.cellPend = px; return; }
+    this.applyCell(px);
   };
 
-  /** Mede o DOM — só para quando ninguém disse o tamanho ainda. */
+  /** Grava o tamanho de facto (CSS + cellH) e recoloca as tiras. */
+  ReelView.prototype.applyCell = function (px) {
+    this.cellPend = 0;
+    this.cellH = px;
+    this.root.style.setProperty('--cell', px + 'px');
+    this.recount();
+    for (var i = 0; i < this.reels.length; i++) {
+      this.fill(this.reels[i]);
+      this.place(this.reels[i]);
+    }
+  };
+
+  /** Rolos todos parados? Então entra o tamanho que ficou à espera. */
+  ReelView.prototype.flushCell = function () {
+    if (!this.cellPend) return;
+    for (var i = 0; i < this.reels.length; i++) {
+      if (this.reels[i].phase && this.reels[i].phase !== 'idle') return;
+    }
+    this.applyCell(this.cellPend);
+  };
+
+  /** Há algum rolo em movimento? */
+  ReelView.prototype.girando = function () {
+    if (this.raf) return true;
+    for (var i = 0; i < this.reels.length; i++) {
+      if (this.reels[i].phase && this.reels[i].phase !== 'idle') return true;
+    }
+    return false;
+  };
+
+  /**
+   * Quantas células cada tira precisa de ter para a janela nunca ficar vazia.
+   *
+   * A conta é GEOMÉTRICA, de propósito — não se lê o DOM aqui. A janela do
+   * rolo é, por construção, `rows × cellH`: é o que o CSS declara e é o
+   * mesmo número que a sala calculou. Foi justamente confiar numa medida
+   * tirada do DOM que fez o `cellH` descolar do `--cell` e abrir buracos.
+   *
+   * Com a tira em `rows + 2` células e `pos` sempre dentro de [0, cellH):
+   *   topo  = pos − cellH          (no mínimo −cellH)
+   *   fundo = pos + (rows+1)·cellH (no mínimo (rows+1)·cellH)
+   * ou seja, o fundo fica SEMPRE abaixo da janela (rows·cellH). Nunca sobra
+   * vão: há sempre um símbolo colado ao seguinte, de ponta a ponta.
+   */
+  ReelView.prototype.recount = function () {
+    for (var i = 0; i < this.reels.length; i++) {
+      this.reels[i].need = this.reels[i].rows + BUFFER;
+    }
+  };
+
+  /** Completa a tira por baixo até cobrir a janela inteira. */
+  ReelView.prototype.fill = function (r) {
+    var alvo = r.need || (r.rows + BUFFER);
+    /* por baixo, nunca por cima: o índice da folga de topo tem de continuar
+       a ser 1, senão o `cellAt` passa a apontar para a célula errada */
+    while (r.strip.children.length < alvo) {
+      r.strip.appendChild(this.cell(drawSymbol(this.c, Math.random)));
+    }
+  };
+
+  /** Mede o DOM — só enquanto ninguém tiver dito o tamanho. */
   ReelView.prototype.measure = function () {
+    if (this.cellTravada) {
+      /* a sala já mandou: nada de remedir, só reposicionar */
+      this.recount();
+      for (var i = 0; i < this.reels.length; i++) this.place(this.reels[i]);
+      return;
+    }
     var h = this.reels[0] ? this.reels[0].el.clientHeight : 0;
     if (h) return this.setCell(h / this.reels[0].rows);
 
@@ -631,6 +714,7 @@
         r.strip.appendChild(this.cell({ s: grid[col][row], v: money[col + ':' + row] }));
       }
       r.strip.appendChild(this.cell(drawSymbol(this.c, Math.random)));
+      this.fill(r);
       r.pos = 0;
       this.place(r);
     }
@@ -652,7 +736,7 @@
   /** Recicla: entra uma célula no topo, sai a de baixo. */
   ReelView.prototype.recycle = function (r, symIndex) {
     r.strip.insertBefore(this.cell(symIndex), r.strip.firstChild);
-    while (r.strip.children.length > r.rows + BUFFER) {
+    while (r.strip.children.length > (r.need || (r.rows + BUFFER))) {
       r.strip.removeChild(r.strip.lastChild);
     }
   };
@@ -687,8 +771,11 @@
     var turbo = !!opts.turbo;
 
     this.clearWins();
-    this.measure();
-    if (!this.cellH) this.cellH = 80;      // layout ainda não mediu: valor de reserva
+    /* Só mede se ninguém nunca disse o tamanho. Remedir aqui a cada giro era
+       o que fazia o cellH afastar-se aos poucos do `--cell` do CSS. */
+    if (!this.cellH) this.measure();
+    if (!this.cellH) this.setCell(80);     // layout ainda não mediu: valor de reserva
+    this.recount();
 
     var runMs = turbo ? 230 : 320;         // giro solto antes de engatar a fila
     var vmax = turbo ? SPEED_TURBO : SPEED;
@@ -737,7 +824,7 @@
           r.el.classList.add('landed');
           setTimeout(function () { r.el.classList.remove('landed'); }, 260);
           if (opts.onStop) opts.onStop(col);
-          if (--pending === 0) resolve();
+          if (--pending === 0) { self.flushCell(); resolve(); }
         };
       });
 
@@ -834,8 +921,10 @@
         self.place(r);
       }
 
-      if (active) self.raf = requestAnimationFrame(frame);
-      else self.raf = 0;
+      if (active) { self.raf = requestAnimationFrame(frame); return; }
+
+      self.raf = 0;
+      self.flushCell();   // rolos parados: entra o tamanho que ficou à espera
     };
 
     this.raf = requestAnimationFrame(frame);
