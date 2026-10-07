@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   apk:
-    name: Compilar FortuneGo (debug)
+    name: Compilar FortuneGo (release assinado)
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -51,6 +51,17 @@ jobs:
           echo "--- build-tools ---"
           ls -1 "$SDK/build-tools" 2>/dev/null || echo "nenhum"
 
+      - name: Conferir a chave de assinatura
+        run: |
+          set -e
+          echo "--- keystore/fortunego.p12 ---"
+          keytool -list -v \
+            -keystore keystore/fortunego.p12 \
+            -storetype PKCS12 \
+            -storepass fortunego \
+            | grep -E 'Alias name|Entry type|Owner|Valid from|Signature algorithm|Subject Public Key'
+          echo "chave OK"
+
       - name: Gerar inventário de imagens
         run: python3 tools/gen-asset-manifest.py
 
@@ -68,29 +79,57 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Compilar APK de debug
+      # Release (não debug): assinado com chave estável, debuggable=false.
+      # É isso que tira o aviso de "app nocivo" do Play Protect no sideload.
+      - name: Compilar APK de release
         id: build
         run: |
           set -o pipefail
-          gradle assembleDebug --no-daemon --stacktrace --warning-mode all 2>&1 | tee build.log
+          gradle assembleRelease --no-daemon --stacktrace --warning-mode all 2>&1 | tee build.log
 
       - name: Preparar artefato
         id: apk
         run: |
-          SRC=$(find app/build/outputs/apk -name '*.apk' | head -1)
-          cp "$SRC" FortuneGo-debug.apk
-          echo "size=$(du -h FortuneGo-debug.apk | cut -f1)" >> "$GITHUB_OUTPUT"
-          ls -lh FortuneGo-debug.apk
+          set -e
+          SRC=$(find app/build/outputs/apk/release -name '*.apk' | head -1)
+          if [ -z "$SRC" ]; then echo "nenhum APK de release gerado"; exit 1; fi
+          case "$SRC" in
+            *unsigned*) echo "ERRO: saiu um APK NÃO ASSINADO ($SRC)"; exit 1 ;;
+          esac
+          cp "$SRC" FortuneGo.apk
+          echo "size=$(du -h FortuneGo.apk | cut -f1)" >> "$GITHUB_OUTPUT"
+          ls -lh FortuneGo.apk
+
+      - name: Verificar a assinatura do APK
+        id: verify
+        run: |
+          set -e
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)
+          echo "apksigner: $APKSIGNER"
+          "$APKSIGNER" verify --verbose --print-certs FortuneGo.apk | tee assinatura.txt
+          grep -q "Verified using v2 scheme (APK Signature Scheme v2): true" assinatura.txt
+          echo "assinatura v2 confirmada"
+          # debuggable TEM de estar desligado: com ele o Play Protect alerta
+          AAPT=$(find "$ANDROID_HOME/build-tools" -name aapt2 -type f | sort -V | tail -1)
+          if "$AAPT" dump badging FortuneGo.apk 2>/dev/null | grep -q "application-debuggable"; then
+            echo "ERRO: APK está debuggable"; exit 1
+          fi
+          echo "debuggable: não"
+          "$AAPT" dump badging FortuneGo.apk 2>/dev/null | grep -E "^package|sdkVersion|targetSdkVersion|uses-permission" || true
 
       - name: Conferir o que entrou no APK
         run: |
           {
             echo "### Conteúdo do APK"
             echo '```'
-            echo "tamanho: $(du -h FortuneGo-debug.apk | cut -f1)"
-            echo "imagens empacotadas: $(unzip -l FortuneGo-debug.apk | grep -cE 'assets/img/.*\.(png|webp)')"
+            echo "tamanho: $(du -h FortuneGo.apk | cut -f1)"
+            echo "imagens empacotadas: $(unzip -l FortuneGo.apk | grep -cE 'assets/img/.*\.(png|webp)')"
             echo "---"
-            unzip -l FortuneGo-debug.apk | grep -E 'assets/([^/]*\.html|js/|css/|img/manifest)' || true
+            unzip -l FortuneGo.apk | grep -E 'assets/([^/]*\.html|js/|css/|img/manifest)' || true
+            echo '```'
+            echo "### Assinatura"
+            echo '```'
+            grep -E "Verified using|Signer #1 certificate (DN|SHA-256)" assinatura.txt || true
             echo '```'
           } > apk-report.md
           cat apk-report.md
@@ -101,7 +140,7 @@ jobs:
                    assets/js/fortune-slot.js assets/js/fortune-game.js \
                    assets/js/fortune-lobby.js \
                    assets/css/fortune.css assets/css/fortune-game.css; do
-            if unzip -l FortuneGo-debug.apk | grep -qE "[[:space:]]$f\$"; then
+            if unzip -l FortuneGo.apk | grep -qE "[[:space:]]$f\$"; then
               echo "ok   $f"
             else
               echo "FALTA $f no APK"; exit 1
@@ -112,22 +151,29 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: FortuneGo-APK
-          path: FortuneGo-debug.apk
+          path: FortuneGo.apk
           retention-days: 30
 
       - name: Publicar release com o APK
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          CERT=$(grep -m1 "Signer #1 certificate SHA-256 digest" assinatura.txt | cut -d: -f2- | tr -d ' ')
+          gh release delete apk --yes --cleanup-tag 2>/dev/null || true
           gh release delete apk-debug --yes --cleanup-tag 2>/dev/null || true
-          gh release create apk-debug FortuneGo-debug.apk \
+          gh release create apk FortuneGo.apk \
             --target "${{ github.sha }}" \
-            --title "FortuneGo — APK de debug" \
-            --prerelease \
-            --notes "APK gerado automaticamente do commit ${{ github.sha }} (${{ steps.apk.outputs.size }}).
+            --title "FortuneGo — APK assinado" \
+            --notes "APK de **release assinado**, gerado do commit \`${{ github.sha }}\` (${{ steps.apk.outputs.size }}).
 
-          **Como instalar:** baixe no celular, abra e autorize *Instalar apps de fontes desconhecidas* se o Android pedir.
-          Build de debug — não serve para publicar na Play Store."
+          **Como instalar**
+          1. Baixe o \`FortuneGo.apk\` no celular.
+          2. Se você já tinha a versão antiga (de debug), **desinstale antes** — a assinatura mudou e o Android não deixa atualizar por cima.
+          3. Abra o arquivo e autorize *Instalar apps de fontes desconhecidas* quando o Android pedir. Esse pedido é padrão de qualquer app fora da Play Store.
+
+          **Por que não aparece mais aviso de risco:** o APK é assinado com chave de release estável (v1+v2+v3), não é depurável e pede só 3 permissões (internet, estado da rede e vibração).
+
+          Impressão digital SHA-256 do certificado: \`$CERT\`"
 
       # Devolve o resultado por uma issue, porque o download de log do Actions
       # não é acessível de onde o agente roda.

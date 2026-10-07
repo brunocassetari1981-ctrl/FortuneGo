@@ -6,7 +6,8 @@
  *   1. a calibração entrega o RTP alvo (erro < 1 ponto percentual);
  *   2. o RTP exato (fórmula fechada) bate com o RTP medido por simulação
  *      de 300.000 rodadas — ou seja, a fórmula e o código do giro concordam;
- *   3. o jogo é jogável: todo símbolo tem prêmio > 0 e a escada é decrescente.
+ *   3. o jogo é jogável: todo símbolo tem prêmio > 0 e a escada é decrescente;
+ *   4. a grade é 3-4-3 com 10 linhas e todo símbolo premium é exclusivo.
  * Mais um bloco de casos de borda das regras de linha (curinga/scatter).
  */
 'use strict';
@@ -31,6 +32,8 @@ console.log('\n=== RTP por jogo (' + ROUNDS.toLocaleString('pt-BR') + ' rodadas 
 console.log(pad('jogo', 20) + pad('vol', 7) + pad('alvo', 8) + pad('exato', 8) + pad('simulado', 18) +
             pad('acerto', 9) + pad('free', 8) + 'maior prêmio');
 console.log('-'.repeat(92));
+
+var premiums = [];
 
 Games.list.forEach(function (game) {
   var c = M.prepare(game);
@@ -57,10 +60,33 @@ Games.list.forEach(function (game) {
 
   var pays = c.all.filter(function (s) { return !s.isScatter; }).map(function (s) { return s.pay; });
   check(pays.every(function (p) { return p > 0; }), game.id + ': há símbolo sem prêmio');
-  for (var i = 1; i < 6; i++) {
+  for (var i = 1; i < c.wildIndex; i++) {
     check(c.all[i - 1].pay >= c.all[i].pay, game.id + ': escada de prêmios fora de ordem em s' + i);
   }
   check(c.all[c.wildIndex].pay >= c.all[0].pay, game.id + ': curinga paga menos que o símbolo premium');
+
+  /* forma da grade e das linhas */
+  check(String(c.rowsPer) === '3,4,3', game.id + ': grade não é 3-4-3 (' + c.rowsPer + ')');
+  check(c.cells === 10, game.id + ': grade com ' + c.cells + ' posições, esperado 10');
+  check(c.lines.length === 10, game.id + ': ' + c.lines.length + ' linhas, esperado 10');
+  c.lines.forEach(function (l, i) {
+    check(l.length === c.cols && l.every(function (row, col) { return row < c.rowsPer[col]; }),
+      game.id + ': linha ' + (i + 1) + ' sai da grade (' + l + ')');
+  });
+
+  /* o curinga é o bicho do jogo, com a mesma arte do card do lobby */
+  check(c.all[c.wildIndex].img === game.img,
+    game.id + ': o curinga deveria usar a arte do jogo (' + c.all[c.wildIndex].img + ')');
+  premiums.push({ id: game.id, img: c.all[0].img });
+});
+
+/* cada jogo precisa de um símbolo premium próprio — é o que diferencia as
+   máquinas. Só as duas entradas de demonstração podem repetir. */
+var reais = premiums.filter(function (p) { return p.id.indexOf('demo') !== 0; });
+var vistos = {};
+reais.forEach(function (p) {
+  check(!vistos[p.img], p.id + ': símbolo premium repetido (' + p.img + ')');
+  vistos[p.img] = true;
 });
 
 /* ------------------------- Regras de linha ------------------------- */
@@ -69,13 +95,16 @@ console.log('\n=== Regras de linha ===\n');
 var c = M.prepare(Games.byId('tigre'));
 var W = c.wildIndex, S = c.scatterIndex;
 
-function gridOf(rowCenter, filler) {
-  var g = [];
-  for (var col = 0; col < 3; col++) g[col] = [filler, rowCenter[col], filler];
-  return g;
+/* Monta uma grade 3-4-3 em que só a LINHA 2 (meio das três laterais,
+   posição 1 da coluna central) recebe os símbolos do teste. */
+function gridOf(mid, filler) {
+  return [
+    [filler, mid[0], filler],
+    [filler, mid[1], filler, filler],
+    [filler, mid[2], filler]
+  ];
 }
-// usa um símbolo que não forma linha nas bordas para isolar a linha central
-var filler = 5;
+var filler = 4;              // lanterna: não forma linha nas bordas do teste
 var cases = [
   { name: '3 iguais na central pagam', grid: gridOf([0, 0, 0], 4), expect: c.all[0].pay },
   { name: 'curinga substitui', grid: gridOf([0, W, 0], 4), expect: c.all[0].pay },
@@ -86,7 +115,7 @@ var cases = [
 
 cases.forEach(function (t) {
   var r = M.evaluate(c, t.grid);
-  var central = r.wins.filter(function (w) { return w.line === 0; })[0];
+  var central = r.wins.filter(function (w) { return w.line === 1; })[0];
   var got = central ? central.pay : 0;
   var ok = Math.abs(got - t.expect) < 1e-9;
   if (!ok) fails++;
@@ -94,20 +123,37 @@ cases.forEach(function (t) {
 });
 
 /* 3 scatters em qualquer posição disparam giros grátis */
-var sg = [[S, 4, 4], [4, S, 4], [4, 4, S]];
+var sg = [[S, 3, 3], [3, S, 3, 3], [3, 3, S]];
 var sr = M.evaluate(c, sg);
 var okFree = sr.free === c.freeSpins && sr.scatters === 3;
 if (!okFree) fails++;
 console.log((okFree ? ' ✓ ' : ' ✗ ') + pad('3 scatters espalhados dão ' + c.freeSpins + ' giros grátis', 44) +
   'obtido ' + sr.free + ' giros / ' + sr.scatters + ' scatters');
 
-/* 5 linhas: grade toda do mesmo símbolo deve premiar as 5 */
-var fullGrid = [[3, 3, 3], [3, 3, 3], [3, 3, 3]];
+/* grade cheia do mesmo símbolo: as 10 linhas pagam, e o ganho em múltiplos
+   da APOSTA TOTAL é igual ao prêmio do símbolo (10 linhas ÷ 10 de aposta) */
+var fullGrid = [[2, 2, 2], [2, 2, 2, 2], [2, 2, 2]];
 var fr = M.evaluate(c, fullGrid);
-var okAll = fr.wins.length === 5 && Math.abs(fr.winUnits - c.all[3].pay) < 1e-9;
+var okAll = fr.wins.length === 10 && Math.abs(fr.winUnits - c.all[2].pay) < 1e-9;
 if (!okAll) fails++;
-console.log((okAll ? ' ✓ ' : ' ✗ ') + pad('grade cheia premia as 5 linhas', 44) +
+console.log((okAll ? ' ✓ ' : ' ✗ ') + pad('grade cheia premia as 10 linhas', 44) +
   'linhas ' + fr.wins.length + ' / ganho ' + fr.winUnits.toFixed(2) + '× aposta');
+
+/* as 10 linhas são todas diferentes */
+var assinaturas = {}, okUnic = true;
+c.lines.forEach(function (l) {
+  if (assinaturas[l.join('-')]) okUnic = false;
+  assinaturas[l.join('-')] = true;
+});
+if (!okUnic) fails++;
+console.log((okUnic ? ' ✓ ' : ' ✗ ') + pad('as 10 linhas são distintas entre si', 44) +
+  Object.keys(assinaturas).length + ' traçados únicos');
+
+/* a posição 3 da coluna central (a quarta) é usada por alguma linha */
+var usaQuarta = c.lines.some(function (l) { return l[1] === 3; });
+if (!usaQuarta) fails++;
+console.log((usaQuarta ? ' ✓ ' : ' ✗ ') + pad('a 4ª posição do rolo central entra em linha', 44) +
+  c.lines.filter(function (l) { return l[1] === 3; }).length + ' linha(s)');
 
 console.log('\n' + (fails === 0
   ? '✅ matemática do caça-níquel OK — ' + Games.list.length + ' jogos calibrados'

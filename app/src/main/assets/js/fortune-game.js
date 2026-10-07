@@ -58,6 +58,11 @@
 
   /* ------------------------------- Variáveis ------------------------------- */
 
+  var cBase = c;                // configuração normal
+  var cBonus = null;            // configuração da aposta bônus (sob demanda)
+  var bonusOn = false;
+  var BONUS_COST = 1.5;         // a aposta bônus custa 50% a mais
+
   var view = null;
   var busy = false;
   var turbo = false;
@@ -68,8 +73,8 @@
   var sessionWins = 0;          // para a barra de tarefa
   var hideWinTimer = null;
 
-  var LINE_COLORS = ['#facc15', '#22d3ee', '#f472b6', '#4ade80', '#fb923c'];
-  var STEP_RATIO = 0.18;        // quanto o rolo central sobe (fração da célula)
+  var LINE_COLORS = ['#facc15', '#22d3ee', '#f472b6', '#4ade80', '#fb923c',
+                     '#a78bfa', '#f87171', '#34d399', '#60a5fa', '#fde047'];
 
   /* -------------------------------- Helpers -------------------------------- */
 
@@ -103,6 +108,24 @@
     }
   }
 
+  /* A faixa azul embaixo dos rolos: normalmente rola o letreiro, na vitória
+     vira "WIN 0,25" com a moeda, igual ao original. */
+  var marqueeTimer = null;
+  function setMarqueeWin(amount) {
+    var bar = $('#marquee');
+    clearTimeout(marqueeTimer);
+    if (amount == null) {
+      bar.classList.remove('win');
+      $('#marqueeWin').textContent = '';
+      return;
+    }
+    bar.classList.add('win');
+    var el = $('#marqueeWin');
+    el.textContent = num(0);
+    animateTo(el, 0, amount, turbo ? 350 : 800);
+    marqueeTimer = setTimeout(function () { bar.classList.remove('win'); }, turbo ? 1400 : 3200);
+  }
+
   function sound(f, d, t) { if (FG.sound) FG.sound(f, d, t); }
   function haptic(ms) { if (FG.haptic) FG.haptic(ms); }
 
@@ -132,7 +155,7 @@
   /* --------------------------- Números das linhas --------------------------- */
 
   function buildLineNumbers() {
-    var left = [[], [], []], right = [[], [], []];
+    var left = [[], [], []], right = [[], [], []];   // 3 faixas visíveis de cada lado
     c.lines.forEach(function (l, i) {
       left[l[0]].push(i + 1);
       right[l[c.cols - 1]].push(i + 1);
@@ -159,19 +182,28 @@
 
   /* ------------------------------ Linhas (SVG) ------------------------------ */
 
+  /**
+   * Desenha as 10 linhas em coordenadas de 300×300, onde 100 = 1 célula das
+   * colunas laterais. A coluna do meio tem 4 posições e fica centrada, então
+   * ela começa meia célula ACIMA: o centro da posição r vale r*100 (0, 100,
+   * 200, 300) em vez de 50, 150, 250.
+   */
   function buildLines() {
-    var X = [50, 150, 250], Y = [50, 150, 250];
-    var off = STEP_RATIO * 100;          // o rolo do meio sobe: a linha acompanha
+    var X = [50, 150, 250];
+    var side = [50, 150, 250];          // centros das colunas de 3
+    var mid = [0, 100, 200, 300];       // centros da coluna de 4
     var out = '';
     for (var i = 0; i < c.lines.length; i++) {
       var l = c.lines[i];
-      var d = 'M 0,' + Y[l[0]] +
-              ' L ' + X[0] + ',' + Y[l[0]] +
-              ' L ' + X[1] + ',' + (Y[l[1]] - off) +
-              ' L ' + X[2] + ',' + Y[l[2]] +
-              ' L 300,' + Y[l[2]];
-      out += '<path data-line="' + i + '" d="' + d + '" stroke="' + LINE_COLORS[i % LINE_COLORS.length] +
-             '" style="color:' + LINE_COLORS[i % LINE_COLORS.length] + '"></path>';
+      var y0 = side[l[0]], y1 = mid[l[1]], y2 = side[l[2]];
+      var col = LINE_COLORS[i % LINE_COLORS.length];
+      var d = 'M 0,' + y0 +
+              ' L ' + X[0] + ',' + y0 +
+              ' L ' + X[1] + ',' + y1 +
+              ' L ' + X[2] + ',' + y2 +
+              ' L 300,' + y2;
+      out += '<path data-line="' + i + '" d="' + d + '" stroke="' + col +
+             '" style="color:' + col + '"></path>';
     }
     $('#lines').innerHTML = out;
   }
@@ -201,7 +233,7 @@
       w.cells.forEach(function (cell) { winning[cell[0] + ':' + cell[1]] = true; });
     });
     for (var col = 0; col < c.cols; col++) {
-      for (var row = 0; row < c.rows; row++) {
+      for (var row = 0; row < c.rowsPer[col]; row++) {
         var el = view.cellAt(col, row);
         if (!el) continue;
         if (winning[col + ':' + row]) el.classList.add('win');
@@ -215,6 +247,9 @@
 
   function bigWin(amount, ratio) {
     var box = $('#bigwin');
+    var face = $('#bwFace');
+    if (face) face.src = c.all[c.wildIndex].img || '';
+    box.classList.toggle('mega', ratio >= 40);
     $('#bwKind').textContent = ratio >= 100 ? 'JACKPOT!' : (ratio >= 40 ? 'MEGA VITÓRIA' : 'GRANDE VITÓRIA');
     $('#bwMult').textContent = ratio.toFixed(1).replace('.', ',') + '× a sua aposta';
     $('#bwAmount').textContent = money(0);
@@ -224,6 +259,8 @@
     [660, 880, 1100, 1320, 1560].forEach(function (f, i) {
       setTimeout(function () { sound(f, 0.17, 'sine'); }, i * 120);
     });
+    document.body.classList.add('shake');
+    setTimeout(function () { document.body.classList.remove('shake'); }, 620);
     var close = function () { box.classList.remove('on'); };
     box.onclick = close;
     setTimeout(close, 2800);
@@ -239,9 +276,29 @@
     $('#betDown').disabled = $('#betUp').disabled = spinning || freeLeft > 0;
   }
 
+  function betNow() { return state.bet * (bonusOn ? BONUS_COST : 1); }
+
+  function toggleBonus() {
+    if (busy || freeLeft) return;
+    bonusOn = !bonusOn;
+    if (bonusOn && !cBonus) cBonus = M.prepare(game, { bonus: true });
+    c = bonusOn ? cBonus : cBase;
+    $('#bonusBtn').classList.toggle('on', bonusOn);
+    $('#bonusBtn').querySelector('b').textContent = bonusOn ? 'ON' : 'OFF';
+    buildPaytable();
+    renderBet();
+    haptic(10);
+    sound(bonusOn ? 760 : 420, 0.07, 'triangle');
+    if (FG.toast) {
+      FG.toast(bonusOn
+        ? 'Aposta bônus ligada: custa ' + BONUS_COST + '× e o scatter aparece 2,5× mais'
+        : 'Aposta bônus desligada');
+    }
+  }
+
   function doSpin(isFree) {
     if (busy) return;
-    if (!isFree && state.balance < state.bet) {
+    if (!isFree && state.balance < betNow()) {
       if (FG.toast) FG.toast('Saldo insuficiente — toque no + para depositar 💳');
       stopAuto();
       return;
@@ -254,7 +311,7 @@
     $('#winValue').textContent = num(0);
 
     if (!isFree) {
-      state.balance -= state.bet;
+      state.balance -= betNow();
       state.spins++;
       renderBalance();
     }
@@ -266,7 +323,7 @@
 
     var early = 0;
     for (var col = 0; col < 2; col++) {
-      for (var row = 0; row < c.rows; row++) {
+      for (var row = 0; row < c.rowsPer[col]; row++) {
         if (res.grid[col][row] === c.scatterIndex) early++;
       }
     }
@@ -283,7 +340,7 @@
 
   function settle(res, isFree) {
     var mult = isFree ? c.freeMult : 1;
-    var amount = res.winUnits * state.bet * mult;
+    var amount = res.winUnits * betNow() * mult;
     var ratio = res.winUnits * mult;
 
     if (res.wins.length) {
@@ -305,6 +362,7 @@
       state.history = state.history.slice(0, 12);
 
       setWinbar((isFree ? '🎁 ' : '') + 'GANHOU ' + money(amount), 'win');
+      setMarqueeWin(amount);
       renderBalance();
       if (FG.hapticWin) FG.hapticWin(); else haptic(40);
       if (ratio >= 15) bigWin(amount, ratio);
@@ -312,7 +370,7 @@
     } else {
       setWinbar(res.scatters === 2 ? 'Quase! Faltou 1 scatter 😮' : 'Não foi dessa vez 🍀', '');
       if (!isFree) {
-        state.history.unshift(game.name + ' · −' + money(state.bet));
+        state.history.unshift(game.name + ' · −' + money(betNow()));
         state.history = state.history.slice(0, 12);
       }
     }
@@ -340,7 +398,7 @@
     if (auto !== 0) {
       if (auto > 0) auto--;
       if (auto === 0) { stopAuto(); return; }
-      if (state.balance < state.bet) { stopAuto(); return; }
+      if (state.balance < betNow()) { stopAuto(); return; }
       updateAutoLabel();
       setTimeout(function () { doSpin(false); }, turbo ? 120 : 340);
     }
@@ -408,12 +466,17 @@
 
     var sc = c.all[c.scatterIndex];
     $('#ptRules').innerHTML =
-      '<b>Curinga</b> — substitui qualquer símbolo, menos o scatter.<br>' +
-      '<b>Scatter</b> — 3 em qualquer posição dão <b>' + c.freeSpins +
+      '<b>' + game.name + '</b> é o <b>curinga</b> — substitui qualquer símbolo, ' +
+      'menos o scatter, e é o que mais paga.<br>' +
+      '<b>Scatter</b> — ' + c.scatterNeed + ' em qualquer posição dão <b>' + c.freeSpins +
       ' giros grátis</b> com multiplicador <b>' + c.freeMult + '×</b>.<br>' +
-      'Os prêmios multiplicam a <b>aposta por linha</b> (aposta total ÷ 5).<br>' +
-      'Aposta atual: <b>' + money(state.bet) + '</b> · por linha <b>' + money(state.bet / 5) + '</b>.' +
-      (sc.img ? '' : '');
+      'Grade de <b>3-4-3</b> com <b>' + c.lines.length + ' linhas</b>; o prêmio multiplica a ' +
+      '<b>aposta por linha</b> (aposta total ÷ ' + c.lines.length + ').<br>' +
+      (c.bonusBet ? '<b>Aposta bônus ligada</b> — custa ' + BONUS_COST +
+        '× e o scatter sai 2,5× mais; os prêmios de linha caem na mesma medida, ' +
+        'o RTP continua ' + (c.rtpExact * 100).toFixed(2).replace('.', ',') + '%.<br>' : '') +
+      'Aposta atual: <b>' + money(betNow()) + '</b> · por linha <b>' +
+      money(betNow() / c.lines.length) + '</b>.' + (sc.img ? '' : '');
   }
 
   function openSheet(open) {
@@ -426,21 +489,28 @@
   /* --------------------------------- Aposta --------------------------------- */
 
   function renderBet() {
-    $('#betVal').textContent = num(state.bet);
+    $('#betVal').textContent = num(betNow());
     $('#multVal').textContent = (betIndex + 1) + 'x';
-    $('#betPerLine').textContent = num(state.bet / c.lines.length) + ' / linha';
+    $('#betPerLine').textContent = num(betNow() / c.lines.length) + ' / linha';
   }
 
   /* --------------------------------- Layout --------------------------------- */
 
+  /**
+   * As colunas laterais têm 3 posições e a do meio 4. Mantemos a célula
+   * quadrada: a altura dos rolos é 3 células e a coluna central, centrada,
+   * transborda meia célula para cima e para baixo — exatamente o degrau que
+   * aparece no jogo original. O CSS usa --cell para reservar esse espaço.
+   */
   function layout() {
     var reels = $('#reels');
     if (!reels) return;
     var w = reels.clientWidth;
-    if (w) reels.style.height = w + 'px';
+    if (!w) return;
+    var cell = Math.round(w / c.cols);
+    reels.style.height = (cell * 3) + 'px';
+    $('#frame').style.setProperty('--cell', cell + 'px');
     if (view) view.measure();
-    var cell = (reels.clientHeight || w) / c.rows;
-    if (cell) $('#frame').style.setProperty('--step', Math.round(cell * STEP_RATIO) + 'px');
   }
 
   /* ---------------------------------- Boot ---------------------------------- */
@@ -452,6 +522,7 @@
     });
 
     $('#spinBtn').addEventListener('click', function () { doSpin(false); });
+    $('#bonusBtn').addEventListener('click', toggleBonus);
 
     $('#betDown').addEventListener('click', function () {
       if (busy || freeLeft) return;
@@ -539,21 +610,23 @@
     document.body.style.setProperty('--t1', game.theme[0]);
     document.body.style.setProperty('--t2', game.theme[1]);
 
-    var icon = c.all[0].img || (FG.placeholder ? FG.placeholder(game.name) : '');
+    var icon = c.all[c.wildIndex].img || (FG.placeholder ? FG.placeholder(game.name) : '');
     $('#gName').textContent = game.name;
     $('#gMeta').textContent = Games.volLabel[game.vol] || game.vol;
     $('#rtpLabel').textContent = 'RTP ' + (c.rtpExact * 100).toFixed(2).replace('.', ',') + '%';
     $('#gMascot').src = icon;
     $('#spinIcon').src = icon;
     $('#marqueeText').textContent =
-      game.name + ' paga até ' + c.all[c.wildIndex].pay + '× por linha · 3 scatters dão ' +
-      c.freeSpins + ' giros grátis com multiplicador ' + c.freeMult + '× · boa sorte!';
+      game.name + ' é o curinga e paga ' + c.all[c.wildIndex].pay + '× por linha · ' +
+      c.scatterNeed + ' scatters dão ' + c.freeSpins + ' giros grátis com multiplicador ' +
+      c.freeMult + '× · ' + c.lines.length + ' linhas · boa sorte!';
     $('#gBalance').textContent = num(state.balance);
 
     view = new Slot.ReelView($('#reels'), c);
     layout();
     view.showGrid(M.drawGrid(c, Math.random));
 
+    $('#linesBtn').textContent = '⚙ ' + c.lines.length + ' Linhas';
     buildLines();
     buildLineNumbers();
     buildPaytable();

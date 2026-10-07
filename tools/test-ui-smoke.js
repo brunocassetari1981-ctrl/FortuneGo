@@ -62,8 +62,17 @@ El.prototype.removeChild = function (c) {
   if (i >= 0) this.children.splice(i, 1);
   return c;
 };
+El.prototype.insertBefore = function (c, ref) {
+  var i = ref ? this.children.indexOf(ref) : -1;
+  if (i < 0) this.children.push(c); else this.children.splice(i, 0, c);
+  c.parentNode = this;
+  return c;
+};
 Object.defineProperty(El.prototype, 'firstChild', {
   get: function () { return this.children[0]; }
+});
+Object.defineProperty(El.prototype, 'lastChild', {
+  get: function () { return this.children[this.children.length - 1]; }
 });
 El.prototype.setAttribute = function (k, v) { this.attrs[k] = String(v); };
 El.prototype.getAttribute = function (k) { return this.attrs[k] === undefined ? null : this.attrs[k]; };
@@ -226,11 +235,19 @@ function run(file) {
   await flush();
 
   var reels = registry.reels;
+  var ROWS = sandbox.FortuneSlot.math.ROWS_PER_COL;          // [3, 4, 3]
+  // a tira guarda as posições visíveis + 1 célula de folga em cada ponta
+  var tira = function (i) { return reels.children[i].children[0].children.length; };
+  var esperado = function (i) { return ROWS[i] + 2; };
+
   ok(!!reels && reels.children.length === 3, 'boot montou 3 rolos');
-  ok(reels.children[0].children[0].children.length === 3, 'cada rolo começa com 3 células visíveis');
+  ok(String(ROWS) === '3,4,3', 'grade 3-4-3 (obtido ' + ROWS + ')');
+  ok([0, 1, 2].every(function (i) { return tira(i) === esperado(i); }),
+    'rolos com 3, 4 e 3 posições (obtido ' + [tira(0), tira(1), tira(2)].map(function (n) { return n - 2; }) + ')');
+  ok(reels.children[1].getAttribute('data-rows') === '4', 'o rolo central é o mais alto');
   ok(registry.gName.textContent === 'Tigre da Sorte', 'título veio do id da URL (?id=tigre)');
   ok(/RTP 96,/.test(registry.rtpLabel.textContent), 'RTP calibrado aparece no topo: ' + registry.rtpLabel.textContent);
-  ok(registry.lines.children.length === 5, '5 linhas de pagamento desenhadas no SVG');
+  ok(registry.lines.children.length === 10, '10 linhas de pagamento desenhadas no SVG');
   ok(registry.gBalance.textContent.indexOf('1.000,00') !== -1,
     'saldo inicial R$ 1.000,00 (mostrado: ' + registry.gBalance.textContent + ')');
 
@@ -247,8 +264,8 @@ function run(file) {
   ok(typeof saved.balance === 'number', 'estado foi gravado no localStorage');
   ok(saved.spins === 1, 'contador de giros subiu para 1 (obtido ' + saved.spins + ')');
   ok(registry.spinBtn.disabled === false, 'botão liberou depois da parada');
-  ok(reels.children[0].children[0].children.length === 3,
-    'rolo voltou a 3 células depois da animação (sem lixo acumulado)');
+  ok([0, 1, 2].every(function (i) { return tira(i) === esperado(i); }),
+    'tiras voltaram ao tamanho certo depois da animação (sem lixo acumulado)');
 
   var delta = saved.balance - before;
   var aposta = saved.bet;
@@ -268,8 +285,8 @@ function run(file) {
   ok(fim.spins >= 61, 'todos os giros contabilizados (' + fim.spins + ')');
   ok(fim.balance >= 0, 'saldo nunca ficou negativo (R$ ' + fim.balance.toFixed(2) + ')');
   ok(fim.history.length > 0 && fim.history.length <= 12, 'histórico limitado a 12 linhas (' + fim.history.length + ')');
-  ok(reels.children.every(function (r) { return r.children[0].children.length === 3; }),
-    'os 3 rolos continuam com 3 células após 61 giros');
+  ok([0, 1, 2].every(function (i) { return tira(i) === esperado(i); }),
+    'os 3 rolos continuam do tamanho certo após 61 giros');
 
   /* ---- aposta ---- */
   registry.betUp.fire('click');

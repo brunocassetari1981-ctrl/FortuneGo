@@ -11,8 +11,8 @@
  *   tag      '' | 'hot' | 'new' | 'live'  (filtros do lobby)
  *   rtp      RTP ALVO em %. O motor calibra os prêmios para bater nesse número.
  *   vol      'baixa' | 'media' | 'alta'   (define pesos e escada de prêmios)
- *   chars    6 símbolos do tema; o primeiro é o premium (desenhado com `img`)
- *   wild     símbolo curinga (substitui qualquer um, menos o scatter)
+ *   chars    emojis de reserva; o primeiro é o BICHO (usado como curinga)
+ *   item     objeto exclusivo do tema — é o símbolo premium dos rolos
  *   scatter  símbolo de giros grátis (paga em qualquer posição, 3+)
  *   theme    [cor1, cor2] do gradiente da máquina
  */
@@ -116,24 +116,26 @@
   var VOL_LABEL = { baixa: 'baixa', media: 'média', alta: 'alta' };
 
   /* ------------------------------------------------------------------ *
-   * Baralho de símbolos. A escada é a mesma em todos os jogos (premium →
-   * saco → lingote → item do tema → moedas → lanterna), mas o PRIMEIRO é o
-   * bicho do jogo e o QUARTO é o item exclusivo daquele tema — é isso que
-   * faz cada máquina parecer diferente. Se um PNG ainda não existir, a sala
-   * de jogo sonda o caminho e cai no emoji sozinha.
+   * Baralho de símbolos (5 pagantes + curinga + scatter, como nos jogos
+   * Fortune originais). O PRIMEIRO é o item exclusivo do tema — cenoura no
+   * Coelho, pérola no Dragão, queijo no Rato — e vale mais que todos os
+   * outros; os quatro seguintes (saco, lingote, moedas, lanterna) são
+   * comuns a todas as máquinas. O BICHO não é símbolo comum: ele é o
+   * curinga. Se um PNG não existir, a sala sonda o caminho e cai no emoji.
    * ------------------------------------------------------------------ */
   var SYM = 'img/sym/';
 
   GAMES.forEach(function (g) {
     g.sym = [
-      { char: g.chars[0],   img: g.img },
-      { char: '💰',         img: SYM + 'bag.png' },
-      { char: '🪙',         img: SYM + 'ingot.png' },
-      { char: g.itemChar,   img: SYM + g.item + '.png' },
-      { char: '🧧',         img: SYM + 'coins.png' },
-      { char: '🏮',         img: SYM + 'lantern.png' }
+      { char: g.itemChar, img: SYM + g.item + '.png' },   /* premium: só deste jogo */
+      { char: '💰',       img: SYM + 'bag.png' },
+      { char: '🪙',       img: SYM + 'ingot.png' },
+      { char: '🧧',       img: SYM + 'coins.png' },
+      { char: '🏮',       img: SYM + 'lantern.png' }
     ];
-    g.wildSym = { char: g.wild, img: SYM + 'wild.png' };
+    /* O BICHO é o curinga — mesma arte do card do lobby, com a faixa
+       dourada "WILD" desenhada por CSS em cima da célula. */
+    g.wildSym = { char: g.chars[0], img: g.img, label: 'WILD' };
     g.scatterSym = { char: g.scatter, img: SYM + 'scatter.png' };
   });
 

@@ -205,21 +205,50 @@ Para desligar os efeitos num elemento, use a classe `fg-no-enhance`.
 
 O GitHub Actions compila o app a cada push e publica o APK numa release:
 
-### 👉 [**Baixar FortuneGo-debug.apk**](https://github.com/brunocassetari1981-ctrl/FortuneGo/releases/tag/apk-debug)
+### 👉 [**Baixar FortuneGo.apk**](https://github.com/brunocassetari1981-ctrl/FortuneGo/releases/tag/apk)
 
-Abra esse link **no navegador do celular**, baixe o arquivo, toque nele e autorize
-*Instalar apps de fontes desconhecidas* se o Android pedir.
+Abra esse link **no navegador do celular**, baixe o arquivo e toque nele.
+
+> ⚠️ **Já tinha a versão antiga instalada?** Desinstale primeiro. A assinatura mudou de
+> debug para release, e o Android nunca deixa atualizar por cima quando a chave é outra.
 
 | | |
 |---|---|
-| Tamanho | ~17 MB |
-| Tipo | debug (assinado com a chave de debug — não serve para a Play Store) |
-| Conteúdo verificado | `index.html`, `css/`, `js/`, `img/manifest.json` e **26 imagens** empacotadas |
+| Tamanho | ~19 MB |
+| Tipo | **release assinado** (chave estável, esquemas v1 + v2 + v3) |
+| Depurável | não (`debuggable=false`) |
+| Permissões | só 3: internet, estado da rede e vibração |
+| Conteúdo verificado | `index.html`, `game.html`, `css/`, `js/`, `img/manifest.json` e **45 imagens** |
 | Workflow | [`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml) |
 
-O workflow roda: JDK 17 → Android SDK → gera o inventário de imagens →
-**executa `tools/test-matcher.js`** (o build falha se o motor de resgate regredir) →
-`assembleDebug` → publica o APK como artefato e como release.
+### Sobre o aviso de vírus na instalação
+
+Dá para separar dois avisos bem diferentes que o Android mostra:
+
+| Aviso | Sai? | Por quê |
+|---|---|---|
+| *"Este tipo de arquivo pode prejudicar seu dispositivo"* / *"Instalar apps de fontes desconhecidas"* | **não** | O Android mostra isso para **qualquer** APK instalado fora da Play Store, inclusive de apps famosos. É o aviso de sideload, não uma acusação ao app. |
+| *"App nocivo bloqueado"* / *"App não verificado"* do **Play Protect** | **sim** | Vinha de o APK ser **debug**: chave de debug, `debuggable=true`. Agora é release assinado, e esses gatilhos sumiram. |
+
+O que foi feito concretamente para isso:
+
+* **Assinatura de release com chave estável** (`keystore/fortunego.p12`, RSA 2048, válida até 2056),
+  nos esquemas v1, v2 e v3 — o CI quebra o build se o APK sair sem assinatura v2.
+* **`debuggable=false`** — o CI confere com `aapt2 dump badging` e falha se voltar.
+* **Permissões mínimas** — `INTERNET`, `ACCESS_NETWORK_STATE`, `VIBRATE`. Nada de SMS,
+  contatos, localização ou instalação de pacotes, que são os pedidos que mais disparam heurística.
+* **Sem tráfego em texto puro** (`usesCleartextTraffic=false`) e sem bypass de SSL.
+* **Sem código ofuscado nem carregamento dinâmico** — R8 continua desligado de propósito,
+  então não há `DexClassLoader`, que é um clássico sinalizador de malware.
+
+A chave versionada é de **demonstração**, para qualquer um conseguir compilar. Para publicar
+de verdade, gere a sua e passe por variáveis de ambiente — o Gradle já lê:
+`FORTUNEGO_KEYSTORE`, `FORTUNEGO_KEYSTORE_PASSWORD`, `FORTUNEGO_KEY_ALIAS`, `FORTUNEGO_KEY_PASSWORD`.
+
+O workflow roda: JDK 17 → Android SDK → confere a chave → gera o inventário de imagens →
+**três suítes de teste** (`test-matcher.js`, `test-slot.js`, `test-ui-smoke.js`; o build falha se
+qualquer uma regredir) → `assembleRelease` → verifica a assinatura e o `debuggable` →
+publica o APK como artefato e como release.
 O resultado de cada build também vira comentário na issue *Relatório de build (CI)*.
 
 ---

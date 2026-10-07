@@ -14,7 +14,7 @@
   --gold-1: #ffe9a8;
   --gold-2: #f6c33c;
   --gold-3: #b26a12;
-  --step: 14px;
+  --cell: 80px;        /* altura de uma posição; o JS mede e reescreve */
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
@@ -192,6 +192,8 @@
   grid-template-columns: 20px 1fr 20px;
   align-items: center;
   gap: 4px;
+  /* folga para o rolo central, que sobe e desce meia célula */
+  padding-block: calc(var(--cell, 80px) * 0.5 + 4px);
 }
 
 /* números das linhas, como no original */
@@ -212,11 +214,15 @@
   text-shadow: 0 0 10px #facc15;
 }
 
-/* --------------------------- moldura dourada --------------------------- */
+/* --------------------------- moldura dourada ---------------------------
+   Geometria 3-4-3: as colunas laterais têm 3 posições e a central 4. A do
+   meio fica centrada, logo transborda MEIA célula para cima e para baixo —
+   é o degrau que aparece no jogo original. Tudo é derivado de --cell, que
+   o JS mede a cada layout(). ----------------------------------------- */
 
 .fr-frame {
   position: relative;
-  padding: calc(9px + var(--step)) 9px 9px;
+  padding: 9px;
   border-radius: 16px;
   background:
     linear-gradient(180deg, var(--gold-1) 0%, var(--gold-2) 22%, var(--gold-3) 60%, var(--gold-2) 100%);
@@ -225,15 +231,15 @@
     0 14px 30px rgba(0, 0, 0, 0.6),
     inset 0 2px 0 rgba(255, 255, 255, 0.5);
 }
-/* caixa elevada atrás do rolo central */
+/* a saliência dourada que abraça o rolo central, mais alto */
 .fr-frame::before {
   content: '';
   position: absolute;
-  left: 33.6%; right: 33.6%;
-  top: calc(-1 * var(--step));
-  height: calc(var(--step) + 20px);
-  border-radius: 12px 12px 0 0;
-  background: linear-gradient(180deg, var(--gold-1), var(--gold-2) 55%, var(--gold-3));
+  left: 33.1%; right: 33.1%;
+  top: calc(var(--cell, 80px) * -0.5);
+  bottom: calc(var(--cell, 80px) * -0.5);
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--gold-1), var(--gold-2) 22%, var(--gold-3) 60%, var(--gold-2));
   box-shadow: 0 0 0 2px #6b3a06, inset 0 2px 0 rgba(255, 255, 255, 0.5);
   z-index: 0;
 }
@@ -244,7 +250,6 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 5px;
-  aspect-ratio: 1 / 1;
   align-items: start;
 }
 
@@ -254,19 +259,26 @@
   height: 100%;
   border-radius: 9px;
   background:
+    radial-gradient(120% 80% at 50% 0%, #5a2488 0%, transparent 60%),
     linear-gradient(180deg, #4a1d73 0%, #35135a 45%, #2a0f49 100%);
   box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.45), inset 0 6px 16px rgba(0, 0, 0, 0.55);
 }
-.gm-reel:nth-child(2) {
-  margin-top: calc(-1 * var(--step));
-  height: calc(100% + var(--step));
+/* o rolo do meio: 4 posições, centrado, meia célula para fora em cada ponta */
+.gm-reel[data-rows="4"] {
+  height: calc(var(--cell, 80px) * 4);
+  margin-top: calc(var(--cell, 80px) * -0.5);
 }
+/* vinheta: escurece as bordas e dá profundidade ao cilindro */
 .gm-reel::after {
   content: '';
   position: absolute; inset: 0; pointer-events: none; z-index: 3;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.45) 0%, transparent 18%, transparent 82%, rgba(0, 0, 0, 0.45) 100%);
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.55) 0%, transparent 20%, transparent 80%, rgba(0, 0, 0, 0.55) 100%),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.3) 0%, transparent 14%, transparent 86%, rgba(0, 0, 0, 0.3) 100%);
 }
-.gm-reel.spinning .gm-strip { filter: blur(1.7px); }
+/* desfoque de movimento só na velocidade alta — a classe vem do rAF */
+.gm-reel.fast .gm-strip { filter: blur(2.2px); }
+.gm-reel.spinning .gm-strip { will-change: transform; }
 .gm-reel.anticipate {
   box-shadow: inset 0 0 0 3px var(--gold-2), inset 0 0 26px rgba(250, 204, 21, 0.5);
   animation: frShake 0.14s linear infinite;
@@ -275,17 +287,18 @@
   0%, 100% { transform: translateX(0); }
   50% { transform: translateX(1.2px); }
 }
-.gm-reel.landed { animation: gmLand 0.2s ease-out; }
+.gm-reel.landed .gm-strip { animation: gmLand 0.24s cubic-bezier(.22,1.4,.36,1); }
 @keyframes gmLand {
-  0% { transform: translateY(-4px); }
-  60% { transform: translateY(2px); }
-  100% { transform: translateY(0); }
+  0%   { transform: translateY(calc(-1 * var(--cell, 80px))); }
+  55%  { transform: translateY(calc(-1 * var(--cell, 80px) + 5px)); }
+  100% { transform: translateY(calc(-1 * var(--cell, 80px))); }
 }
 
-.gm-strip { display: flex; flex-direction: column; will-change: transform; }
+.gm-strip { display: flex; flex-direction: column; }
 
 .gm-cell {
   height: var(--cell, 80px);
+  flex: 0 0 var(--cell, 80px);
   display: flex; align-items: center; justify-content: center;
   font-size: calc(var(--cell, 80px) * 0.5);
   line-height: 1;
@@ -296,29 +309,87 @@
   width: 86%; height: 86%; object-fit: contain;
   filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.55));
 }
-.gm-cell.is-wild img  { filter: drop-shadow(0 0 10px rgba(250, 204, 21, 0.95)); }
+
+/* curinga = o bicho do jogo, com a faixa dourada WILD */
+.gm-cell.is-wild img { width: 92%; height: 92%; filter: drop-shadow(0 0 9px rgba(250, 204, 21, 0.9)); }
+.gm-cell.is-wild::after {
+  content: 'WILD';
+  position: absolute;
+  left: 7%; right: 7%; bottom: 8%;
+  padding: 2px 0;
+  border-radius: 4px;
+  text-align: center;
+  font-size: calc(var(--cell, 80px) * 0.18);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: #4a1d05;
+  background: linear-gradient(180deg, #fef3c7, var(--gold-2) 45%, #b45309);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+}
 .gm-cell.is-scatter img { filter: drop-shadow(0 0 10px rgba(248, 113, 113, 0.95)); }
 
-.gm-cell.win { z-index: 2; animation: gmWinPop 0.7s ease-in-out infinite alternate; }
+/* vitória: o resto da grade apaga e as células premiadas acendem em ouro */
+.gm-cell.win { z-index: 2; animation: gmWinPop 0.62s ease-in-out infinite alternate; }
 .gm-cell.win::before {
   content: '';
-  position: absolute; inset: 4%;
+  position: absolute; inset: 3%;
   border-radius: 10px;
   border: 2px solid var(--gold-2);
-  background: radial-gradient(circle, rgba(250, 204, 21, 0.32), transparent 72%);
-  box-shadow: 0 0 22px rgba(250, 204, 21, 0.65);
+  background:
+    radial-gradient(circle at 50% 42%, rgba(253, 224, 71, 0.42), transparent 70%);
+  box-shadow: 0 0 26px rgba(250, 204, 21, 0.8), inset 0 0 18px rgba(250, 204, 21, 0.45);
+  animation: gmWinGlow 0.62s ease-in-out infinite alternate;
 }
-.gm-cell.dim { opacity: 0.3; }
+.gm-cell.win::after { filter: brightness(1.25); }
+.gm-cell.dim { opacity: 0.22; filter: grayscale(0.55) brightness(0.6); transition: opacity 0.2s; }
 @keyframes gmWinPop {
   from { transform: scale(1); }
-  to   { transform: scale(1.11); }
+  to   { transform: scale(1.12); }
 }
+@keyframes gmWinGlow {
+  from { opacity: 0.65; }
+  to   { opacity: 1; }
+}
+.gm-reels.has-win { filter: saturate(1.1); }
+
+/* encaixes de moeda sob os rolos laterais (detalhe do gabinete) */
+.fr-slots {
+  position: absolute;
+  left: 9px; right: 9px; bottom: 2px;
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  pointer-events: none;
+}
+.fr-slots span {
+  width: 11px; height: 3px; border-radius: 2px; justify-self: center;
+  background: rgba(74, 29, 5, 0.55);
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.6), 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+.fr-slots span:nth-child(2), .fr-slots span:nth-child(5) { opacity: 0; }
+
+/* botão BONUS BET, à direita dos rolos */
+.fr-bonus {
+  position: absolute;
+  right: -4px; top: 50%;
+  transform: translateY(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  padding: 7px 6px;
+  border: 0; border-radius: 10px;
+  background: linear-gradient(180deg, #7e22ce, #4c1d95);
+  box-shadow: 0 0 0 2px var(--gold-2), 0 4px 10px rgba(0, 0, 0, 0.5);
+  color: #fff; font-family: inherit; cursor: pointer;
+  z-index: 5;
+}
+.fr-bonus small { font-size: 7px; font-weight: 800; letter-spacing: 0.04em; line-height: 1; }
+.fr-bonus b { font-size: 11px; font-weight: 900; color: #fca5a5; line-height: 1; }
+.fr-bonus.on { background: linear-gradient(180deg, #16a34a, #065f46); }
+.fr-bonus.on b { color: #bbf7d0; }
+.fr-bonus:active { transform: translateY(-50%) scale(0.94); }
 
 .gm-lines {
   position: absolute;
   left: 9px; right: 9px;
-  top: calc(9px + var(--step));
-  bottom: 9px;
+  top: 9px; bottom: 9px;
   overflow: visible;
   pointer-events: none;
   z-index: 4;
@@ -378,13 +449,28 @@
   border-bottom: 1px solid rgba(0, 0, 0, 0.5);
   display: flex; align-items: center;
 }
-.fr-marquee span {
+.fr-marquee { position: relative; justify-content: center; transition: background 0.25s; }
+.fr-marquee #marqueeText {
   white-space: nowrap;
   color: #fff; font-size: 12.5px; font-weight: 700;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
   padding-left: 100%;
   animation: frScroll 16s linear infinite;
 }
+.fr-mq-win {
+  display: none;
+  align-items: center; gap: 6px;
+  font-size: 14px; font-weight: 900; letter-spacing: 0.06em;
+  color: #fde047; text-shadow: 0 0 10px rgba(250, 204, 21, 0.8), 0 1px 2px #000;
+}
+.fr-mq-win .coin {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff9c4, var(--gold-2) 55%, #b45309);
+  box-shadow: 0 0 6px rgba(250, 204, 21, 0.9);
+}
+.fr-marquee.win { background: linear-gradient(180deg, #1e40af, #172554); }
+.fr-marquee.win #marqueeText { display: none; }
+.fr-marquee.win .fr-mq-win { display: flex; animation: gmZoom 0.35s cubic-bezier(.2, 1.4, .4, 1); }
 @keyframes frScroll {
   from { transform: translateX(0); }
   to   { transform: translateX(-100%); }
@@ -580,8 +666,40 @@
   text-align: center;
 }
 .gm-bigwin.on { display: flex; animation: gmFade 0.3s ease-out; }
+.gm-bigwin .rays {
+  position: absolute; width: 150vmin; height: 150vmin;
+  background: repeating-conic-gradient(from 0deg,
+    rgba(253, 224, 71, 0.22) 0deg 7deg, transparent 7deg 14deg);
+  animation: gmRays 14s linear infinite;
+  mask-image: radial-gradient(circle, #000 12%, transparent 62%);
+  -webkit-mask-image: radial-gradient(circle, #000 12%, transparent 62%);
+}
+.gm-bigwin .face {
+  position: relative;
+  width: 38vmin; max-width: 210px; height: auto;
+  margin-bottom: 4px;
+  filter: drop-shadow(0 0 28px rgba(250, 204, 21, 0.9));
+  animation: gmFace 0.75s ease-in-out infinite alternate;
+}
+.gm-bigwin.mega .face { animation-duration: 0.45s; }
 .gm-bigwin .kind {
+  position: relative;
   font-size: 13px; letter-spacing: 0.4em; text-transform: uppercase; color: var(--gold-1);
+}
+.gm-bigwin .amount, .gm-bigwin .mult, .gm-bigwin .tap { position: relative; }
+@keyframes gmRays { to { transform: rotate(360deg); } }
+@keyframes gmFace {
+  from { transform: scale(1) rotate(-2deg); }
+  to   { transform: scale(1.07) rotate(2deg); }
+}
+
+/* tremor da tela na vitória grande */
+body.shake { animation: gmShake 0.6s cubic-bezier(.36,.07,.19,.97); }
+@keyframes gmShake {
+  10%, 90% { transform: translate3d(-2px, 0, 0); }
+  20%, 80% { transform: translate3d(3px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-5px, 0, 0); }
+  40%, 60% { transform: translate3d(5px, 0, 0); }
 }
 .gm-bigwin .amount {
   font-size: 46px; font-weight: 900; margin: 6px 0 2px;
@@ -609,5 +727,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .fr-mascot, .gm-cell.win, .fr-free, .fr-marquee span, .fr-spin.busy::before { animation: none; }
+  .fr-mascot, .gm-cell.win, .fr-free, .fr-marquee #marqueeText, .fr-spin.busy::before,
+  .gm-bigwin .rays, .gm-bigwin .face, body.shake { animation: none; }
 }

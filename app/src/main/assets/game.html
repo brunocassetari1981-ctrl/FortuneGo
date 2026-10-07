@@ -56,14 +56,25 @@
       <div class="fr-frame" id="frame">
         <div class="gm-reels" id="reels"></div>
         <svg class="gm-lines" id="lines" viewBox="0 0 300 300" preserveAspectRatio="none" aria-hidden="true"></svg>
+        <div class="fr-slots" aria-hidden="true">
+          <span></span><span></span><span></span>
+          <span></span><span></span><span></span>
+        </div>
       </div>
 
       <div class="fr-side" id="linesRight"></div>
+
+      <button class="fr-bonus" id="bonusBtn">
+        <small>BONUS BET</small><b>OFF</b>
+      </button>
     </div>
   </main>
 
   <!-- ============================ LETREIRO ============================ -->
-  <div class="fr-marquee"><span id="marqueeText">FortuneGo recompensa você com giros grátis</span></div>
+  <div class="fr-marquee" id="marquee">
+    <span id="marqueeText">FortuneGo recompensa você com giros grátis</span>
+    <span class="fr-mq-win"><i class="coin"></i>WIN <b id="marqueeWin">0,00</b></span>
+  </div>
 
   <!-- ========================= BARRA INFERIOR ========================= -->
   <div class="fr-bottom">
@@ -136,6 +147,8 @@
 
   <!-- celebração -->
   <div class="gm-bigwin" id="bigwin">
+    <div class="rays" aria-hidden="true"></div>
+    <img class="face fg-no-enhance" id="bwFace" src="" alt="">
     <div class="kind" id="bwKind">GRANDE VITÓRIA</div>
     <div class="amount" id="bwAmount">R$ 0,00</div>
     <div class="mult" id="bwMult"></div>
