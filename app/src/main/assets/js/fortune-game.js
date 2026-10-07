@@ -755,6 +755,23 @@
      figura e a grelha parecia vazia. Por isso a largura da máquina é
      reduzida para casar exatamente com a célula escolhida. */
 
+  /* ------------------ ALTURA REALMENTE VISÍVEL ------------------
+     100dvh é a altura da JANELA, que nem sempre é a altura que se VÊ:
+
+       · WebView de ponta a ponta → as barras do sistema ficam por cima
+       · browser de telemóvel     → a barra de endereço entra e sai
+       · teclado aberto           → encolhe a área útil
+
+     Nos três casos o jogo era dimensionado para um espaço maior do que o
+     visível e as pontas ficavam escondidas. Aqui medimos o que de facto
+     aparece e prendemos o corpo a essa altura, para o cálculo do
+     enquadramento trabalhar sobre um número verdadeiro. */
+  function fitViewport() {
+    var vv = window.visualViewport;
+    var h = (vv && vv.height) || window.innerHeight || 0;
+    if (h > 0) document.body.style.height = Math.round(h) + 'px';
+  }
+
   var MEDIDAS = {};
   function cssPx(nome, padrao) {
     if (MEDIDAS[nome] !== undefined) return MEDIDAS[nome];
@@ -767,6 +784,7 @@
   }
 
   function layout() {
+    fitViewport();
     var reels = $('#reels');
     if (!reels) return;
     var stage = $('.fr-stage');
@@ -931,6 +949,11 @@
 
     window.addEventListener('resize', layout);
     window.addEventListener('orientationchange', function () { setTimeout(layout, 220); });
+    /* a barra de endereço do browser móvel entra e sai sem disparar
+       'resize' em alguns aparelhos — o visualViewport avisa sempre */
+    if (window.visualViewport && window.visualViewport.addEventListener) {
+      window.visualViewport.addEventListener('resize', layout);
+    }
     document.addEventListener('visibilitychange', function () { if (document.hidden) save(); });
   }
 

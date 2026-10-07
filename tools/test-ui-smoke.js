@@ -350,8 +350,8 @@ function run(file) {
     var m = /var SPEED = ([\d.]+)/.exec(code);
     vmax = m ? parseFloat(m[1]) * 1000 : 0;
   }());
-  ok(vmax >= 6 && vmax <= 13,
-    'giro visível: ' + vmax.toFixed(1) + ' células/s (faixa aceita 6 a 13)');
+  ok(vmax >= 4 && vmax <= 13,
+    'giro visível e sem pressa: ' + vmax.toFixed(1) + ' células/s (faixa aceita 4 a 13)');
   ok(registry.gName.textContent === 'Tigre da Sorte', 'título veio do id da URL (?id=tigre)');
   ok(/RTP 96,/.test(registry.rtpLabel.textContent), 'RTP calibrado aparece no topo: ' + registry.rtpLabel.textContent);
   ok(registry.lines.children.length === 10, '10 linhas de pagamento desenhadas no SVG');

@@ -10,6 +10,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
+import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -19,9 +20,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
@@ -77,7 +81,12 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        // Barras do sistema transparentes com ÍCONES CLAROS: o app é escuro,
+        // e o padrão (auto) deixaria ícones pretos invisíveis no modo claro.
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+        )
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         setContent {
@@ -90,7 +99,26 @@ class MainActivity : ComponentActivity() {
                     .background(Color(0xFF07040C))
             ) {
                 AndroidView(
-                    modifier = Modifier.fillMaxSize(),
+                    /*
+                     * ENQUADRAMENTO — a correção que faltava.
+                     *
+                     * Com enableEdgeToEdge() a janela passa a ocupar o ecrã
+                     * TODO, barra de estado e barra de gestos incluídas. O
+                     * WebView estava em fillMaxSize() sem compensar isso, por
+                     * isso o 100dvh do CSS valia a altura da JANELA e não a
+                     * altura VISÍVEL: a barra superior do jogo ficava por
+                     * baixo do relógio e da bateria, e a barra de GIRAR por
+                     * baixo da barra de gestos. O jogo parecia cortado em
+                     * cima e em baixo, e nenhum ajuste de CSS resolvia,
+                     * porque do lado web aquela altura "existia".
+                     *
+                     * safeDrawing = barras do sistema + recorte do ecrã
+                     * (notch) + teclado. O WebView passa a receber exatamente
+                     * a área visível, e aí 100dvh volta a dizer a verdade.
+                     */
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .windowInsetsPadding(WindowInsets.safeDrawing),
                     factory = { context ->
                         buildFortuneWebView(
                             context = context,

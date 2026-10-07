@@ -481,13 +481,14 @@
   /* Velocidade em alturas de célula por milissegundo.
        26/s (o valor original) → borrão, 1,5 quadro por símbolo
         9/s                    → dava para ver, mas ainda corrido
-        6,2/s                  → ~9,7 quadros por símbolo: dá tempo de
-                                 reconhecer cada figura enquanto passa
+        6,2/s                  → 9,7 quadros, ainda pedido mais devagar
+        5,0/s                  → 12 quadros por símbolo: a figura chega a
+                                 ficar parada aos olhos antes de sair
      A frenagem também fica mais longa de brinde, porque a duração dela é
      calculada a partir da velocidade (T = 3·d/v): quanto mais devagar o
      rolo corre, mais suave ele encosta. */
-  var SPEED = 0.0062;
-  var SPEED_TURBO = 0.0105;
+  var SPEED = 0.0050;
+  var SPEED_TURBO = 0.0088;
   var BRAKE = 3;       // a frenagem cobre os 3 últimos símbolos, igual em todo rolo
 
   function now() {
@@ -689,9 +690,17 @@
     this.measure();
     if (!this.cellH) this.cellH = 80;      // layout ainda não mediu: valor de reserva
 
-    var runMs = turbo ? 240 : 430;         // giro solto antes de engatar a fila
-    var stagger = turbo ? 100 : 200;       // atraso entre rolos
+    var runMs = turbo ? 230 : 320;         // giro solto antes de engatar a fila
     var vmax = turbo ? SPEED_TURBO : SPEED;
+
+    /* Atraso entre rolos DERIVADO da velocidade, não um número solto.
+       A travagem só arranca depois de cruzar uma borda de célula, por isso
+       se o atraso for menor do que o tempo de uma célula dois rolos caem na
+       mesma borda e param juntos — foi o que aconteceu ao baixar a
+       velocidade com o atraso fixo em 170 ms contra 200 ms por célula.
+       1,35 célula de intervalo mantém a parada escalonada e visível em
+       qualquer velocidade que se venha a escolher. */
+    var stagger = Math.round((1 / vmax) * 1.35);
     var maxRows = Math.max.apply(null, this.c.rowsPer);
 
     return new Promise(function (resolve) {
@@ -786,7 +795,11 @@
             r.travelled = 0;
             r.t0 = t;
             var vpx = Math.max(1e-4, r.speed * self.cellH);
-            r.decel = Math.min(1800, Math.max(220, 3 * r.target / vpx));
+            /* T = 3·d/v mantém a velocidade no início da travagem igual à do giro
+               solto (derivada do easeOutCubic em t=0). Com o rolo mais lento esse
+               T cresce; o tecto antigo de 1800 ms passaria a cortar a curva e
+               devolveria o solavanco que já tínhamos eliminado. */
+            r.decel = Math.min(2600, Math.max(220, 3 * r.target / vpx));
             r.phase = 'stop';
           }
         }
