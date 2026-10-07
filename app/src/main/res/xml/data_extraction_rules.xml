@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <data-extraction-rules>
+    <!-- Android 12+. Mesma regra do backup_rules.xml: lista branca de
+         preferências, sem <exclude> redundante (reprovado pelo lint). -->
     <cloud-backup>
         <include domain="sharedpref" path="." />
-        <exclude domain="file" path="app_webview" />
     </cloud-backup>
     <device-transfer>
         <include domain="sharedpref" path="." />

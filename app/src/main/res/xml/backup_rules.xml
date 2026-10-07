@@ -1,7 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <full-backup-content>
-    <!-- Preferências do jogador (som, favoritos) entram no backup; cache não. -->
+    <!--
+      Só as preferências do app entram no backup.
+
+      Como existe um <include>, o backup passa a ser uma LISTA BRANCA: tudo que
+      não está listado já fica de fora. Os <exclude> de webview.db e app_webview
+      que havia aqui eram redundantes e o lint os reprovava com FullBackupContent
+      ("not in an included path") — justamente por apontarem para caminhos que
+      nem entravam no backup.
+
+      Efeito prático: o estado do jogo (saldo, histórico) vive no localStorage do
+      WebView, dentro de app_webview, e por isso NÃO é restaurado em outro
+      aparelho. É o comportamento desejado para um app de demonstração.
+    -->
     <include domain="sharedpref" path="." />
-    <exclude domain="database" path="webview.db" />
-    <exclude domain="file" path="app_webview" />
 </full-backup-content>

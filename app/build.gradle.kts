@@ -78,12 +78,12 @@ android {
             isDebuggable = true
         }
     }
-    /* O lintVitalRelease barrou o primeiro build de release. O lint continua
-     * rodando e gravando o relatório completo (o CI imprime o arquivo), mas
-     * não derruba mais o empacotamento: o que protege o APK de verdade são as
-     * três suítes de teste e a verificação de assinatura/debuggable no CI. */
+    /* O lint derrubou o primeiro assembleRelease com FullBackupContent nas
+     * regras de backup; os <exclude> redundantes foram removidos e o portão
+     * voltou a ser obrigatório. O relatório em texto continua sendo impresso
+     * pelo CI e anexado à issue de build. */
     lint {
-        abortOnError = false
+        abortOnError = true
         checkReleaseBuilds = true
         textReport = true
         htmlReport = true
