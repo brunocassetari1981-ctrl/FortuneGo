@@ -27,6 +27,12 @@
   var game = Games.byId(queryId()) || Games.list[0];
   var c = M.prepare(game);
 
+  /* O TEMA é tudo que distingue esta máquina das outras: arte, paleta,
+     nome do modo bônus e assinatura sonora. A lógica abaixo nunca pergunta
+     "que jogo é esse?" — só lê o tema. Trocar de jogo = trocar o tema. */
+  var Theme = window.FortuneTheme;
+  var theme = Theme.build(game);
+
   /* -------------------------- Estado persistente -------------------------- */
 
   var BETS = [1, 2, 5, 10, 20, 50, 100, 200, 500];
@@ -69,6 +75,8 @@
   var auto = 0;                 // 0 parado · n giros · -1 infinito
   var freeLeft = 0;
   var freeWon = 0;
+  var freeTotal = 0;            // acumulado da rodada bônus, mostrado na faixa
+  var modoBonus = false;        // a tela inteira está no tema do bônus?
   var shownBalance = state.balance;
   var sessionWins = 0;          // para a barra de tarefa
   var hideWinTimer = null;
@@ -148,6 +156,50 @@
 
   function sound(f, d, t) { if (FG.sound) FG.sound(f, d, t); }
   function haptic(ms) { if (FG.haptic) FG.haptic(ms); }
+
+  /* Tocador do tema: fala em GRAUS da escala do jogo, não em hertz. É o que
+     faz o Coelho soar diferente do Tigre sem nenhum arquivo de áudio. */
+  var tune = Theme.audio(theme, function (f, d, t) { sound(f, d, t); });
+
+  /** Clique seco de interface — todo botão da sala passa por aqui. */
+  function click(forte) {
+    sound(forte ? 300 : 210, 0.035, 'square');
+    haptic(forte ? 14 : 8);
+  }
+
+  /* --------------------- O SÍMBOLO DE DINHEIRO ---------------------
+     Cai com um valor impresso na própria moeda. Ele não entra em linha
+     nenhuma: o prêmio sai quando `moneyNeed` ou mais aparecem no mesmo
+     giro, e aí vale a SOMA do que estiver na tela. A barrinha mostra o
+     progresso ao vivo, que é o que prende o jogador. */
+
+  function renderMoneyBar(count, soma, acertou) {
+    var bar = $('#moneyBar');
+    if (!bar) return;
+    var falta = Math.max(0, c.moneyNeed - count);
+    $('#moneyCount').textContent = count;
+    $('#moneyNeed').textContent = acertou
+      ? '/' + c.moneyNeed + ' COMPLETOU!'
+      : '/' + c.moneyNeed + (falta === 1 ? ' — falta 1!' : ' para ganhar');
+    $('#moneyTotal').textContent = soma > 0 ? money(soma * betNow()) : '';
+    bar.classList.toggle('on', count > 0);
+    bar.classList.toggle('close', !acertou && falta > 0 && falta <= 2);
+    bar.classList.toggle('hit', !!acertou);
+  }
+
+  /** Acende as moedas uma a uma, com o som subindo a escala. */
+  function revealMoney(res) {
+    var parcial = 0;
+    res.moneyCells.forEach(function (m, i) {
+      var el = view.cellAt(m.cell[0], m.cell[1]);
+      setTimeout(function () {
+        if (el && el.classList) el.classList.add('money-hit');
+        parcial += m.value;
+        renderMoneyBar(i + 1, parcial, i + 1 >= c.moneyNeed);
+        tune.tocar(i, 0.09);
+      }, i * (turbo ? 55 : 130));
+    });
+  }
 
   /* ------------------------------ Faixa de jackpot ------------------------------ */
 
@@ -286,7 +338,7 @@
         var el = view.cellAt(col, row);
         if (!el) continue;
         if (winning[col + ':' + row]) { el.classList.add('win'); premiadas.push(el); }
-        else el.classList.add('dim');
+        else if (!el.classList.contains('money-hit')) el.classList.add('dim');
       }
     }
     view.root.classList.add('has-win');
@@ -334,8 +386,22 @@
 
     var titulo = ratio >= 100 ? 'JACKPOT!' : (ratio >= 40 ? 'MEGA WIN' : 'BIG WIN');
     var kind = $('#bwKind');
-    kind.textContent = titulo;
-    if (kind.setAttribute) kind.setAttribute('data-text', titulo);   // contorno grosso
+    if (kind.setAttribute) {
+      kind.setAttribute('data-text', titulo);     // contorno grosso
+      kind.setAttribute('aria-label', titulo);    // leitor de tela lê a palavra
+    }
+    /* As letras entram UMA A UMA, caindo e quicando, como no original.
+       Cada uma leva junto o seu grau da escala do jogo. */
+    kind.innerHTML = '';
+    titulo.split('').forEach(function (ch, i) {
+      var sp = document.createElement('span');
+      sp.className = 'ltr';
+      sp.textContent = ch;
+      sp.setAttribute('data-ch', ch);
+      sp.style.animationDelay = (i * 72) + 'ms';
+      kind.appendChild(sp);
+      setTimeout(function () { tune.tocar(i, 0.07); }, i * 72);
+    });
 
     $('#bwMult').textContent = ratio.toFixed(1).replace('.', ',') + '× a sua aposta';
     $('#bwAmount').textContent = money(0);
@@ -412,6 +478,7 @@
     haptic(16);
     sound(380, 0.1, 'sawtooth');
     mascot('spinning');
+    renderMoneyBar(0, 0, false);
 
     var res = M.spin(c);
 
@@ -424,12 +491,25 @@
 
     view.spinTo(res.grid, {
       turbo: turbo,
+      money: res.money,                 // cada moeda cai com o seu valor
       anticipate: early >= 2,
       onStop: function (col) {
         sound(520 + col * 95, 0.05, 'square');
         haptic(7);
       }
-    }).then(function () { settle(res, isFree); });
+    }).then(function () {
+      settle(res, isFree);
+    })['catch'](function (err) {
+      /* Nenhum erro pode deixar a sala travada: solta o giro, avisa e
+         segue. Sem isto, uma exceção aqui dentro some de vez (promessa
+         sem catch) e o botão fica morto até recarregar. */
+      busy = false;
+      freeLeft = 0;
+      setSpinUI(false);
+      setWinbar('Ops, falhou o giro — tente de novo', '');
+      if (window.console && console.error) console.error('[FortuneGo] giro:', err);
+      if (FG.toast) FG.toast('Algo falhou no giro. Pode girar de novo.');
+    });
   }
 
   function settle(res, isFree) {
@@ -437,9 +517,28 @@
     var amount = res.winUnits * betNow() * mult;
     var ratio = res.winUnits * mult;
 
+    /* O dinheiro resolve primeiro: acende as moedas e mostra o progresso.
+       Mesmo sem completar, a barra guarda o que caiu — é a quase-vitória
+       que faz o jogador querer o giro seguinte. */
+    if (res.moneyCount) {
+      if (res.moneyHit) revealMoney(res);
+      else renderMoneyBar(res.moneyCount, res.moneySum, false);
+    } else {
+      renderMoneyBar(0, 0, false);
+    }
+
     if (res.wins.length) {
       highlight(res.wins);
       showLines(res.wins);
+    }
+
+    if (res.wins.length || res.moneyHit) {
+      if (res.moneyHit) {
+        var vDin = res.moneyWin * betNow() * mult;
+        setTimeout(function () {
+          if (FG.toast) FG.toast('💰 ' + res.moneyCount + ' de dinheiro — ' + money(vDin));
+        }, turbo ? 320 : 700);
+      }
       state.balance += amount;
       state.wins++;
       sessionWins++;
@@ -450,12 +549,14 @@
       animateTo($('#winValue'), 0, amount, turbo ? 350 : 700);
 
       var top = res.wins.slice().sort(function (a, b) { return b.pay - a.pay; })[0];
-      var face = c.all[top.symbol].char;
-      state.history.unshift(game.name + ' · ' + face + face + face +
+      var face = top ? new Array(4).join(c.all[top.symbol].char) : ('💰×' + res.moneyCount);
+      state.history.unshift(game.name + ' · ' + face +
         ' · +' + money(amount) + (isFree ? ' (grátis ' + mult + '×)' : ''));
       state.history = state.history.slice(0, 12);
 
-      setWinbar((isFree ? '🎁 ' : '') + 'GANHOU ' + money(amount), 'win');
+      setWinbar((isFree ? '🎁 ' : '') + (res.moneyHit && !res.wins.length ? '💰 ' : '') +
+        'GANHOU ' + money(amount), 'win');
+      if (isFree) { freeTotal += amount; $('#fsWon').textContent = money(freeTotal); }
       setMarqueeWin(amount);
       mascot(ratio >= 15 ? 'party' : 'cheer');
       renderBalance();
@@ -473,7 +574,9 @@
 
     save();
 
-    var pause = res.wins.length ? (turbo ? 650 : 1150) : (turbo ? 220 : 480);
+    var ganhou = res.wins.length || res.moneyHit;
+    var pause = ganhou ? (turbo ? 650 : 1150) : (turbo ? 220 : 480);
+    if (res.moneyHit) pause += res.moneyCount * (turbo ? 55 : 130);
     setTimeout(function () { next(res, isFree); }, pause);
   }
 
@@ -500,30 +603,61 @@
     }
   }
 
-  /* ------------------------------ Giros grátis ------------------------------ */
+  /* ----------------------------- MODO BÔNUS -----------------------------
+     Nos originais a rodada de graça não é só "mais giros": a TELA INTEIRA
+     muda de tema — fundo, cor dos cilindros, moldura, letreiro — e o que
+     você ganha vai se acumulando num contador à vista até a rodada acabar.
+     É isso que está aqui. O nome e as cores saem do tema do jogo, então
+     cada máquina tem o seu modo sem uma linha de código a mais. */
+
+  function entrarModoBonus() {
+    if (modoBonus) return;
+    modoBonus = true;
+    Theme.apply(theme, 'bonus');          // paleta do bônus em toda a tela
+    document.body.classList.add('modo-bonus');
+    tune.arpejo([0, 2, 4, 7, 9, 12], 95, 0.16);
+  }
+
+  function sairModoBonus() {
+    if (!modoBonus) return;
+    modoBonus = false;
+    Theme.apply(theme, 'base');
+    document.body.classList.remove('modo-bonus');
+    tune.arpejo([12, 9, 7, 4, 0], 70, 0.12);
+  }
 
   function beginFree(n) {
     freeLeft = n;
     freeWon = 0;
+    freeTotal = 0;
+    entrarModoBonus();
     $('#freeBanner').classList.add('on');
+    $('#fsName').textContent = theme.bonus.name.toUpperCase();
     $('#fsLeft').textContent = n;
     $('#fsMult').textContent = c.freeMult + '×';
-    setWinbar('🎁 ' + n + ' GIROS GRÁTIS · ' + c.freeMult + '×', 'win');
+    $('#fsWon').textContent = money(0);
+    setWinbar('🎁 ' + theme.bonus.name + ' · ' + n + ' giros · ' + c.freeMult + '×', 'win');
     if (FG.confetti) FG.confetti();
-    if (FG.toast) FG.toast(n + ' giros grátis! Multiplicador ' + c.freeMult + '× 🎁');
+    if (FG.toast) FG.toast(theme.bonus.name + ': ' + n + ' giros com ' + c.freeMult + '× 🎁');
     setSpinUI(true);
     setTimeout(function () { doSpin(true); }, turbo ? 700 : 1500);
   }
 
   function endFree() {
+    var ganho = freeTotal;
     $('#freeBanner').classList.remove('on');
-    if (freeWon > 0) {
-      setWinbar('🎁 Giros grátis renderam ' + money(freeWon), 'win');
+    sairModoBonus();
+    if (ganho > 0) {
+      setWinbar('🎁 ' + theme.bonus.name + ' rendeu ' + money(ganho), 'win');
       if (FG.confetti) FG.confetti();
+      /* a rodada inteira também merece celebração se valeu a pena */
+      var razao = ganho / Math.max(1, state.bet);
+      if (razao >= 15) setTimeout(function () { bigWin(ganho, razao); }, 420);
     } else {
-      setWinbar('Giros grátis encerrados', '');
+      setWinbar(theme.bonus.name + ' encerrado', '');
     }
     freeLeft = 0;
+    freeTotal = 0;
     setSpinUI(false);
     if (auto !== 0) setTimeout(function () { doSpin(false); }, turbo ? 300 : 800);
   }
@@ -627,6 +761,19 @@
   /* ---------------------------------- Boot ---------------------------------- */
 
   function wire() {
+    /* CLIQUE EM TUDO — um toque sem retorno sonoro parece travado. Um só
+       ouvinte na captura cobre qualquer botão da sala, inclusive os que
+       forem criados depois (tabela de prêmios, aposta, menu). O mascote
+       fica de fora porque tem o som próprio dele. */
+    document.addEventListener('pointerdown', function (ev) {
+      var alvo = ev.target && ev.target.closest
+        ? ev.target.closest('button, .fr-icon, .gm-chip, [data-click]')
+        : null;
+      if (!alvo || alvo.disabled) return;
+      if (alvo.id === 'gMascot') return;
+      click(alvo.id === 'spinBtn');
+    }, true);
+
     $('#backBtn').addEventListener('click', function () {
       save();
       location.href = 'index.html';
@@ -727,8 +874,7 @@
   }
 
   function start() {
-    document.body.style.setProperty('--t1', game.theme[0]);
-    document.body.style.setProperty('--t2', game.theme[1]);
+    Theme.apply(theme, 'base');          // paleta normal da máquina
 
     var icon = c.all[c.wildIndex].img || (FG.placeholder ? FG.placeholder(game.name) : '');
     $('#gName').textContent = game.name;
@@ -743,8 +889,12 @@
     $('#gBalance').textContent = num(state.balance);
 
     view = new Slot.ReelView($('#reels'), c);
+    /* a moeda mostra o valor em dinheiro de verdade, não o multiplicador */
+    view.moneyFormat = function (v) { return num(v * betNow()); };
     layout();
-    view.showGrid(M.drawGrid(c, Math.random));
+    var inicial = M.spin(c);
+    view.showGrid(inicial.grid, inicial.money);
+    renderMoneyBar(0, 0, false);
 
     $('#linesBtn').textContent = '⚙ ' + c.lines.length + ' Linhas';
     buildLines();
@@ -757,6 +907,36 @@
     wire();
     updateAutoLabel();
     setSpinUI(false);
+    fecharBoot();
+  }
+
+  /* ----------------------------- CARREGANDO -----------------------------
+     A sala só aparece depois que a arte foi resolvida; até lá fica a tela
+     de abertura com o mascote e a barra enchendo. Evita o pisca-pisca de
+     imagem faltando que havia antes. */
+
+  function fecharBoot() {
+    var boot = $('#boot');
+    if (!boot) return;
+    var fill = $('#bootFill');
+    if (fill) fill.style.width = '100%';
+    $('#bootTip').textContent = 'boa sorte!';
+    setTimeout(function () {
+      boot.classList.add('off');
+      setTimeout(function () { if (boot.parentNode) boot.parentNode.removeChild(boot); }, 650);
+    }, 260);
+  }
+
+  function abrirBoot() {
+    var nome = $('#bootName');
+    if (nome) nome.textContent = game.name;
+    var dica = $('#bootTip');
+    if (dica) dica.textContent = theme.bonus.name + ' · RTP ' +
+      (c.rtpExact * 100).toFixed(2).replace('.', ',') + '%';
+    var face = $('#bootFace');
+    if (face) face.src = game.img || '';
+    var fill = $('#bootFill');
+    if (fill) setTimeout(function () { fill.style.width = '72%'; }, 60);
   }
 
   /* Sonda os PNGs dos símbolos UMA vez. O que não existir (arte ainda não
@@ -778,5 +958,6 @@
     }, 2500);
   }
 
+  abrirBoot();
   resolveArt(start);
 }());

@@ -58,8 +58,31 @@ Games.list.forEach(function (game) {
     game.id + ': simulação ' + pct(s.rtp) + ' diverge da fórmula ' + pct(c.rtpExact) +
     ' (' + (Math.abs(s.rtp - c.rtpExact) / s.se).toFixed(1) + ' erros-padrão)');
 
-  var pays = c.all.filter(function (s) { return !s.isScatter; }).map(function (s) { return s.pay; });
+  /* scatter e dinheiro são recursos, não combinação de linha: pay 0 é o certo */
+  var pays = c.all.filter(function (s) { return !s.isScatter && !s.isMoney; })
+    .map(function (s) { return s.pay; });
   check(pays.every(function (p) { return p > 0; }), game.id + ': há símbolo sem prêmio');
+
+  /* -------- símbolo de dinheiro -------- */
+  var dinheiro = c.all[c.moneyIndex];
+  check(dinheiro && dinheiro.isMoney && dinheiro.pay === 0,
+    game.id + ': o símbolo de dinheiro não deveria pagar em linha');
+  check(c.moneyValues.length >= 6 && c.moneyValues.every(function (v) { return v[0] > 0 && v[1] > 0; }),
+    game.id + ': tabela de valores do dinheiro inválida');
+  check(c.moneyRTP > 0.01 && c.moneyRTP < c.rtpExact,
+    game.id + ': o dinheiro responde por ' + pct(c.moneyRTP) + ' do RTP (fora da faixa)');
+  check(Math.abs((c.baseRTP + c.moneyRTP) * c.freeFactor - c.rtpExact) < 1e-9,
+    game.id + ': linha + dinheiro não fecham o RTP exato');
+  check(Math.abs(s.moneyRTP - c.moneyRTP) < 0.012,
+    game.id + ': dinheiro simulado ' + pct(s.moneyRTP) + ' ≠ teórico ' + pct(c.moneyRTP));
+  /* uma linha cheia de dinheiro NÃO pode virar prêmio de linha */
+  var cheia = [];
+  for (var _c = 0; _c < c.cols; _c++) cheia.push(new Array(c.rowsPer[_c]).fill(c.moneyIndex));
+  var vazio = M.evaluate(c, cheia);
+  check(vazio.wins.length === 0,
+    game.id + ': grade toda de dinheiro pagou linha (não pode)');
+  check(vazio.moneyCount === c.cells && vazio.moneyHit,
+    game.id + ': grade toda de dinheiro não contou as 10 células');
   for (var i = 1; i < c.wildIndex; i++) {
     check(c.all[i - 1].pay >= c.all[i].pay, game.id + ': escada de prêmios fora de ordem em s' + i);
   }

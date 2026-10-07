@@ -74,6 +74,9 @@ jobs:
       - name: Testar animação dos rolos (60 fps simulados)
         run: node tools/test-spin.js
 
+      - name: Testar arquitetura modular (tema por jogo)
+        run: node tools/test-theme.js
+
       - name: Smoke test da sala de jogo (DOM simulado)
         run: node tools/test-ui-smoke.js
 
@@ -157,7 +160,8 @@ jobs:
           for f in assets/index.html assets/game.html \
                    assets/js/fortune-enhance.js assets/js/fortune-games.js \
                    assets/js/fortune-slot.js assets/js/fortune-game.js \
-                   assets/js/fortune-lobby.js \
+                   assets/js/fortune-lobby.js assets/js/fortune-theme.js \
+                   assets/img/sym/money.png \
                    assets/css/fortune.css assets/css/fortune-game.css; do
             if unzip -l FortuneGo.apk | grep -qE "[[:space:]]$f\$"; then
               echo "ok   $f"

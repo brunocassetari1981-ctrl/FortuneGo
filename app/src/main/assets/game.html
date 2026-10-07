@@ -10,6 +10,14 @@
 </head>
 <body class="gm-body">
 
+  <!-- ========================= CARREGANDO ========================= -->
+  <div class="fr-boot" id="boot">
+    <img class="fr-boot-face fg-no-enhance" id="bootFace" src="" alt="">
+    <div class="fr-boot-name" id="bootName">FortuneGo</div>
+    <div class="fr-boot-bar"><i id="bootFill"></i></div>
+    <div class="fr-boot-tip" id="bootTip">carregando…</div>
+  </div>
+
   <!-- ============================ JACKPOT ============================ -->
   <header class="fr-jackpot">
     <div class="fr-jp-top">
@@ -47,8 +55,20 @@
     <div class="fr-backdrop"></div>
     <img class="fr-mascot fg-no-enhance" id="gMascot" src="" alt="">
 
-    <div class="fr-free" id="freeBanner">🎁 GIROS GRÁTIS <b id="fsLeft">0</b> · <span id="fsMult">2×</span></div>
+    <div class="fr-free" id="freeBanner">
+      <span class="fs-name" id="fsName">MODO FORTUNA</span>
+      <span class="fs-left"><b id="fsLeft">0</b> giros</span>
+      <span class="fs-mult" id="fsMult">2×</span>
+      <span class="fs-won" id="fsWon">R$ 0,00</span>
+    </div>
     <div class="fr-wintext" id="winbar">Boa sorte!</div>
+
+    <!-- quantos símbolos de dinheiro estão na tela; 5 fecham o prêmio -->
+    <div class="fr-moneybar" id="moneyBar">
+      <img class="fg-no-enhance" src="img/sym/money.png" alt="">
+      <b id="moneyCount">0</b><span id="moneyNeed">/5 para ganhar</span>
+      <em id="moneyTotal"></em>
+    </div>
 
     <div class="fr-machine">
       <div class="fr-side" id="linesLeft"></div>
@@ -149,7 +169,7 @@
   <div class="gm-bigwin" id="bigwin">
     <div class="rays" aria-hidden="true"></div>
     <img class="face fg-no-enhance" id="bwFace" src="" alt="">
-    <div class="kind" id="bwKind" data-text="BIG WIN">BIG WIN</div>
+    <div class="kind" id="bwKind" data-text="BIG WIN" aria-label="BIG WIN"></div>
     <div class="amount" id="bwAmount">R$ 0,00</div>
     <div class="mult" id="bwMult"></div>
     <div class="gm-eq" id="bwEq" aria-hidden="true"></div>
@@ -159,6 +179,7 @@
   <script src="js/fortune-enhance.js"></script>
   <script src="js/fortune-games.js"></script>
   <script src="js/fortune-slot.js"></script>
+  <script src="js/fortune-theme.js"></script>
   <script src="js/fortune-game.js"></script>
 </body>
 </html>

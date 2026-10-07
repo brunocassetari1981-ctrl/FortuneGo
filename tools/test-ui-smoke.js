@@ -95,6 +95,19 @@ Object.defineProperty(El.prototype, 'innerHTML', {
     }
   }
 });
+/* `className` faltava: o ReelView monta as células com `el.className =
+   'gm-cell'` e o classList ficava vazio, então qualquer seletor por classe
+   não achava nada aqui dentro — inclusive o clearWins() do motor. Agora os
+   dois apontam para o mesmo conjunto, como no navegador. */
+Object.defineProperty(El.prototype, 'className', {
+  get: function () { return this.classList.names().join(' '); },
+  set: function (v) {
+    var cl = this.classList;
+    cl.set = {};
+    String(v).split(/\s+/).forEach(function (c) { if (c) cl.set[c] = true; });
+  }
+});
+
 El.prototype.walk = function (out) {
   out = out || [];
   for (var i = 0; i < this.children.length; i++) {
@@ -147,6 +160,15 @@ async function flush(limitMs) {
 }
 
 /* ------------------------------- Ambiente ------------------------------- */
+
+/* Promessa rejeitada sem catch some do relatório e ainda deixa o jogo
+   travado — era exatamente assim que um erro no `settle` passava batido.
+   Aqui ela vira falha explícita. */
+process.on('unhandledRejection', function (e) {
+  fails++;
+  console.log(' ✗ promessa rejeitada sem tratamento: ' + (e && e.message));
+  console.log('   ' + ((e && e.stack) || '').split('\n')[1]);
+});
 
 var registry = {};
 var body = new El('body');
@@ -223,6 +245,7 @@ function run(file) {
   try {
     run('js/fortune-games.js');
     run('js/fortune-slot.js');
+    run('js/fortune-theme.js');
     ok(!!sandbox.FortuneGames && !!sandbox.FortuneSlot, 'catálogo e motor carregam no escopo global');
     ok(typeof sandbox.FortuneSlot.ReelView === 'function', 'ReelView existe quando há DOM');
 
@@ -330,8 +353,74 @@ function run(file) {
   registry.ptClose.fire('click');
   ok(!registry.paysheet.classList.contains('open'), 'tabela fecha');
 
+  /* ================= OS RECURSOS NOVOS, EM JOGO DE VERDADE =================
+     Em vez de conferir se a classe existe no CSS, isto JOGA até cada
+     recurso aparecer sozinho e verifica o que o jogador veria. Aposta no
+     mínimo para o saldo aguentar a maratona. */
+
+  for (var d = 0; d < 6; d++) { registry.betDown.fire('click'); await flush(); }
+
+  /* o modo bônus liga e desliga dentro de um mesmo flush, então gravamos
+     as classes que passaram pelo body */
+  var passou = {};
+  var addOrig = body.classList.add;
+  body.classList.add = function () {
+    for (var i = 0; i < arguments.length; i++) passou[arguments[i]] = true;
+    return addOrig.apply(this, arguments);
+  };
+
+  /* `registry` só tem o que o jogo já tocou; este atalho cria sob demanda,
+     igual ao document.querySelector do navegador */
+  var el = function (id) { return document.querySelector('#' + id); };
+
+  var viu = { moeda: false, valor: false, quase: false, hit: false,
+              bonus: false, letras: false, grátis: false };
+  var giros = 0;
+
+  for (var k = 0; k < 2500; k++) {
+    if (viu.moeda && viu.valor && viu.quase && viu.hit && viu.bonus && viu.letras) break;
+    registry.spinBtn.fire('click');
+    await flush();
+    giros++;
+
+    var mb = el('moneyBar').classList;
+    if (mb.contains('on')) viu.moeda = true;
+    if (mb.contains('close')) viu.quase = true;
+    if (mb.contains('hit')) viu.hit = true;
+    if (passou['modo-bonus']) viu.bonus = true;
+    if (el('freeBanner').classList.contains('on') ||
+        /MODO .+ DA FORTUNA/i.test(el('fsName').textContent)) viu['grátis'] = true;
+    if (el('bwKind').children.length > 0) viu.letras = true;
+
+    if (!viu.valor) {
+      var celulas = el('reels').querySelectorAll('.gm-cell.is-money');
+      for (var z = 0; z < celulas.length; z++) {
+        var tag = celulas[z].querySelector('.gm-val');
+        if (tag && /\d/.test(tag.textContent)) { viu.valor = true; break; }
+      }
+    }
+  }
+
+  console.log('\n   (' + giros + ' giros extras para ver todos os recursos)\n');
+
+  ok(viu.moeda, 'o contador de dinheiro aparece quando cai uma moeda');
+  ok(viu.valor, 'a moeda cai com o VALOR impresso nela');
+  ok(viu.quase, 'faltando 1 ou 2, o contador entra em alerta (a quase-vitória)');
+  ok(viu.hit, 'juntando ' + sandbox.FortuneSlot.math.prepare(sandbox.FortuneGames.byId('tigre')).moneyNeed +
+    ' moedas o contador marca COMPLETOU');
+  ok(viu['grátis'], 'a rodada grátis anuncia o modo do jogo pelo nome');
+  ok(viu.bonus, 'o modo bônus troca o tema da tela inteira (classe modo-bonus)');
+  ok(viu.letras, 'o BIG WIN monta o título letra a letra (' +
+    el('bwKind').children.length + ' letras)');
+  ok(el('bwKind').children.every(function (l) { return l.getAttribute('data-ch'); }),
+    'cada letra leva o próprio contorno (data-ch)');
+
+  /* a tela de carregamento saiu da frente */
+  ok(body.children.indexOf(el('boot')) === -1 || el('boot').classList.contains('off'),
+    'a tela de carregamento sai depois que a arte resolve');
+
   console.log('\n' + (fails === 0
-    ? '✅ sala de jogo OK — boot, 61 giros, aposta e tabela sem erro'
+    ? '✅ sala de jogo OK — boot, giros, dinheiro, modo bônus, aposta e tabela'
     : '❌ ' + fails + ' verificação(ões) falharam') + '\n');
   process.exit(fails === 0 ? 0 : 1);
 }());

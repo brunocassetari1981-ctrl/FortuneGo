@@ -116,6 +116,37 @@
   var VOL_LABEL = { baixa: 'baixa', media: 'média', alta: 'alta' };
 
   /* ------------------------------------------------------------------ *
+   * EXTRAS DE TEMA — o que dá identidade própria a cada máquina sem
+   * tocar em uma linha de lógica:
+   *   short   nome curto, usado no letreiro e no nome do modo bônus
+   *   bonus   paleta do MODO BÔNUS (a tela inteira troca de cor)
+   *   reel    cor de fundo do cilindro
+   *   audio   [frequência base, escala em semitons, timbre] — é o que faz
+   *           o Coelho soar diferente do Tigre sem nenhum arquivo de som
+   * Jogo que não estiver nesta tabela cai nos valores padrão do
+   * fortune-theme.js e continua jogável.
+   * ------------------------------------------------------------------ */
+  var MENOR = [0, 3, 5, 7, 10];      // pentatônica menor: tensa
+  var MAIOR = [0, 2, 4, 7, 9];       // pentatônica maior: alegre
+
+  var EXTRAS = {
+    tigre:   { short: 'Tigre',   bonus: ['#450a0a', '#fbbf24'], reel: '#3b0a0a', audio: [587.33, MENOR, 'sawtooth'] },
+    dragao:  { short: 'Dragão',  bonus: ['#042f2e', '#5eead4'], reel: '#0b3b38', audio: [440.00, MAIOR, 'triangle'] },
+    coelho:  { short: 'Coelho',  bonus: ['#4a044e', '#f0abfc'], reel: '#4a1d4f', audio: [698.46, MAIOR, 'sine'] },
+    touro:   { short: 'Boi',     bonus: ['#451a03', '#fcd34d'], reel: '#44260a', audio: [523.25, MENOR, 'square'] },
+    panda:   { short: 'Panda',   bonus: ['#0f172a', '#e2e8f0'], reel: '#1e293b', audio: [783.99, MAIOR, 'sine'] },
+    roleta:  { short: 'Roleta',  bonus: ['#1e1b4b', '#fca5a5'], reel: '#3f1020', audio: [659.25, MAIOR, 'triangle'] },
+    mina:    { short: 'Mina',    bonus: ['#1c1917', '#fde047'], reel: '#3a2a0a', audio: [523.25, MENOR, 'sawtooth'] },
+    aviator: { short: 'Aviador', bonus: ['#082f49', '#7dd3fc'], reel: '#0c2b45', audio: [493.88, MAIOR, 'triangle'] },
+    bingo:   { short: 'Bingo',   bonus: ['#2e1065', '#d8b4fe'], reel: '#331065', audio: [440.00, MAIOR, 'square'] },
+    rato:    { short: 'Rato',    bonus: ['#1e293b', '#fde68a'], reel: '#2b3348', audio: [783.99, MAIOR, 'triangle'] },
+    espaco:  { short: 'Astro',   bonus: ['#2e1065', '#a5b4fc'], reel: '#201a4d', audio: [587.33, [0, 2, 5, 7, 10], 'sine'] },
+    futebol: { short: 'Pênalti', bonus: ['#052e16', '#86efac'], reel: '#0d3b22', audio: [523.25, MAIOR, 'square'] },
+    demo1:   { short: 'Tigre',   bonus: ['#450a0a', '#fbbf24'], reel: '#3b0a0a', audio: [587.33, MENOR, 'sawtooth'] },
+    demo2:   { short: 'Demo',    bonus: ['#1b0b22', '#c4b5fd'], reel: '#2a1540', audio: [523.25, MAIOR, 'triangle'] }
+  };
+
+  /* ------------------------------------------------------------------ *
    * Baralho de símbolos (5 pagantes + curinga + scatter, como nos jogos
    * Fortune originais). O PRIMEIRO é o item exclusivo do tema — cenoura no
    * Coelho, pérola no Dragão, queijo no Rato — e vale mais que todos os
@@ -137,6 +168,20 @@
        dourada "WILD" desenhada por CSS em cima da célula. */
     g.wildSym = { char: g.chars[0], img: g.img, label: 'WILD' };
     g.scatterSym = { char: g.scatter, img: SYM + 'scatter.png' };
+    /* símbolo de dinheiro: a arte é comum, o VALOR é impresso por CSS */
+    g.moneySym = { char: '💰', img: SYM + 'money.png' };
+
+    /* mescla os extras de tema; o que faltar vira padrão no fortune-theme.js */
+    var e = EXTRAS[g.id];
+    if (e) {
+      g.short = e.short;
+      g.palette = { bonus: e.bonus, reel: e.reel };
+      g.audio = { root: e.audio[0], scale: e.audio[1], timbre: e.audio[2] };
+    }
+    g.bonusMode = {
+      name: 'Modo ' + ((e && e.short) || g.name) + ' da Fortuna',
+      spins: null, mult: null       // quem manda é o preset de volatilidade
+    };
   });
 
   function byId(id) {

@@ -34,24 +34,33 @@
    * weights = peso de cada símbolo no sorteio
    * ratios  = escada RELATIVA de prêmios (a calibração escala tudo)
    * ------------------------------------------------------------------ */
+  /* Tabelas de valor dos símbolos de dinheiro: [valor em apostas, peso].
+     Quanto mais volátil o jogo, mais longa a cauda de valores altos. */
+  var VALUES_BAIXA = [[0.2, 30], [0.4, 24], [0.6, 18], [1, 12], [1.5, 8], [2, 5], [3, 2], [5, 1]];
+  var VALUES_MEDIA = [[0.2, 28], [0.4, 22], [0.8, 16], [1.2, 12], [2, 8], [3, 5], [5, 3], [10, 1]];
+  var VALUES_ALTA  = [[0.2, 26], [0.5, 21], [1, 16], [2, 12], [3, 8], [5, 5], [10, 3], [25, 1]];
+
   var PRESETS = {
     baixa: {
       weights: [6, 9, 12, 15, 18],
       ratios: [60, 30, 18, 10, 7],
       wild: { weight: 4, ratio: 90 },
-      scatter: { weight: 5, free: 8, mult: 2 }
+      scatter: { weight: 5, free: 8, mult: 2 },
+      money: { weight: 13, need: 5, values: VALUES_BAIXA }
     },
     media: {
       weights: [5, 8, 11, 14, 18],
       ratios: [110, 45, 24, 13, 8],
       wild: { weight: 3, ratio: 170 },
-      scatter: { weight: 4, free: 8, mult: 2 }
+      scatter: { weight: 4, free: 8, mult: 2 },
+      money: { weight: 13, need: 5, values: VALUES_MEDIA }
     },
     alta: {
       weights: [4, 7, 10, 14, 18],
       ratios: [220, 85, 38, 18, 10],
       wild: { weight: 2, ratio: 320 },
-      scatter: { weight: 3, free: 10, mult: 3 }
+      scatter: { weight: 3, free: 10, mult: 3 },
+      money: { weight: 13, need: 5, values: VALUES_ALTA }
     }
   };
 
@@ -140,6 +149,17 @@
       weight: preset.scatter.weight * (opts.bonus ? 2.5 : 1),
       ratio: 0, pay: 0, isScatter: true
     });
+    /* Símbolo de dinheiro: cai com um VALOR impresso. Não paga em linha;
+       junte `need` deles numa rodada e leva a soma de todos. Na aposta
+       bônus ele também fica mais frequente. */
+    var moneyIndex = all.length;
+    all.push({
+      id: 'money',
+      char: game.moneySym ? game.moneySym.char : '💰',
+      img: game.moneySym ? game.moneySym.img : null,
+      weight: preset.money.weight * (opts.bonus ? 1.35 : 1),
+      ratio: 0, pay: 0, isMoney: true
+    });
 
     var totalWeight = 0;
     all.forEach(function (s) { totalWeight += s.weight; });
@@ -153,6 +173,9 @@
       all: all,
       wildIndex: wildIndex,
       scatterIndex: scatterIndex,
+      moneyIndex: moneyIndex,
+      moneyNeed: preset.money.need,
+      moneyValues: preset.money.values,
       lines: LINES,
       totalWeight: totalWeight,
       freeSpins: preset.scatter.free,
@@ -166,15 +189,80 @@
     c.scatterProb = scatterChance(c.prob[scatterIndex], c.cells, c.scatterNeed);
     c.freeFactor = 1 + c.scatterProb * c.freeSpins * c.freeMult;
 
+    /* O recurso de dinheiro tem valor esperado FIXO (não é calibrado). É a
+       escada de linha que se ajusta para o TOTAL bater no RTP alvo. */
+    c.moneyEV = weightedMean(preset.money.values);
+    c.moneyHitProb = atLeast(c.prob[moneyIndex], c.cells, preset.money.need);
+    c.moneyRTP = moneyExpectation(c);
+
+    c.lineTarget = (game.rtp / 100) / c.freeFactor - c.moneyRTP;
+    if (c.lineTarget <= 0.01) c.lineTarget = 0.01;   // rede de segurança
+
     var rawLine = lineExpectation(c, function (s) { return s.ratio; });
-    var k = (game.rtp / 100) / (rawLine * c.freeFactor);
-    all.forEach(function (s) { s.pay = s.isScatter ? 0 : niceRound(s.ratio * k); });
+    var k = c.lineTarget / rawLine;
+    all.forEach(function (s) {
+      s.pay = (s.isScatter || s.isMoney) ? 0 : niceRound(s.ratio * k);
+    });
     refine(c);
 
     c.baseRTP = lineExpectation(c, payOf);
-    c.rtpExact = c.baseRTP * c.freeFactor;
+    c.rtpExact = (c.baseRTP + c.moneyRTP) * c.freeFactor;
     c.calibration = k;
     return c;
+  }
+
+  /* ------------------------ Recurso de dinheiro ------------------------ */
+
+  function weightedMean(pairs) {
+    var sv = 0, sw = 0;
+    for (var i = 0; i < pairs.length; i++) { sv += pairs[i][0] * pairs[i][1]; sw += pairs[i][1]; }
+    return sv / sw;
+  }
+
+  /** P(sair pelo menos `need` em `cells` posições independentes). */
+  function atLeast(p, cells, need) {
+    var acc = 0;
+    for (var i = 0; i < need; i++) {
+      acc += combinations(cells, i) * Math.pow(p, i) * Math.pow(1 - p, cells - i);
+    }
+    return Math.max(0, 1 - acc);
+  }
+
+  /**
+   * Valor esperado do recurso, em múltiplos da APOSTA TOTAL. Paga a soma dos
+   * valores quando saem `need` ou mais símbolos, logo:
+   *   E = E[valor] · Σ_{k≥need} k · P(k símbolos)
+   */
+  function moneyExpectation(c) {
+    var p = c.prob[c.moneyIndex], n = c.cells, need = c.moneyNeed;
+    var soma = 0;
+    for (var k = need; k <= n; k++) {
+      soma += k * combinations(n, k) * Math.pow(p, k) * Math.pow(1 - p, n - k);
+    }
+    return c.moneyEV * soma;
+  }
+
+  /** Sorteia o valor impresso num símbolo de dinheiro. */
+  function drawValue(c, rng) {
+    var tab = c.moneyValues, total = 0, i;
+    for (i = 0; i < tab.length; i++) total += tab[i][1];
+    var r = (rng || Math.random)() * total;
+    for (i = 0; i < tab.length; i++) {
+      r -= tab[i][1];
+      if (r < 0) return tab[i][0];
+    }
+    return tab[tab.length - 1][0];
+  }
+
+  /** Carimba um valor em cada célula de dinheiro da grade. */
+  function drawMoney(c, grid, rng) {
+    var vals = {};
+    for (var col = 0; col < c.cols; col++) {
+      for (var row = 0; row < c.rowsPer[col]; row++) {
+        if (grid[col][row] === c.moneyIndex) vals[col + ':' + row] = drawValue(c, rng);
+      }
+    }
+    return vals;
   }
 
   function ladderOk(c, i, np) {
@@ -187,10 +275,10 @@
 
   /** Recupera em passos de 0,1× o RTP perdido no arredondamento dos prêmios. */
   function refine(c) {
-    var targetBase = (c.rtpTarget / 100) / c.freeFactor;
+    var targetBase = c.lineTarget;
     var movable = [];
     for (var i = 0; i < c.all.length; i++) {
-      if (!c.all[i].isScatter && c.all[i].pay < 20) movable.push(i);
+      if (!c.all[i].isScatter && !c.all[i].isMoney && c.all[i].pay < 20) movable.push(i);
     }
     if (!movable.length) return;
 
@@ -226,7 +314,7 @@
     var total = 0;
     for (var i = 0; i < c.all.length; i++) {
       var s = c.all[i];
-      if (s.isWild || s.isScatter) continue;
+      if (s.isWild || s.isScatter || s.isMoney) continue;
       var p = c.prob[i] + pw;
       total += (p * p * p - wild3) * pay(s);
     }
@@ -256,6 +344,7 @@
 
   function linePay(c, ids) {
     if (ids.indexOf(c.scatterIndex) !== -1) return null;
+    if (ids.indexOf(c.moneyIndex) !== -1) return null;
     var base = -1;
     for (var i = 0; i < ids.length; i++) {
       if (ids[i] !== c.wildIndex) { base = ids[i]; break; }
@@ -267,14 +356,29 @@
     return { symbol: base, pay: c.all[base].pay };
   }
 
-  function evaluate(c, grid) {
+  /**
+   * @param {object} c     configuração vinda de prepare()
+   * @param {Array}  grid  índices de símbolo por coluna/linha
+   * @param {object} [money] valores carimbados nas células de dinheiro,
+   *        no formato {"col:row": valor}. Sem ele, o recurso não paga.
+   */
+  function evaluate(c, grid, money) {
+    money = money || {};
     var wins = [], payTotal = 0, scatters = 0, scatterCells = [];
+    var moneyCells = [], moneySum = 0;
 
     for (var col = 0; col < c.cols; col++) {
       for (var row = 0; row < c.rowsPer[col]; row++) {
         if (grid[col][row] === c.scatterIndex) { scatters++; scatterCells.push([col, row]); }
+        if (grid[col][row] === c.moneyIndex) {
+          var v = money[col + ':' + row] || 0;
+          moneyCells.push({ cell: [col, row], value: v });
+          moneySum += v;
+        }
       }
     }
+    var moneyHit = moneyCells.length >= c.moneyNeed;
+    var moneyWin = moneyHit ? moneySum : 0;
 
     for (var l = 0; l < c.lines.length; l++) {
       var line = c.lines[l], ids = [], cells = [];
@@ -291,17 +395,28 @@
 
     return {
       grid: grid,
+      money: money,
       wins: wins,
       payTotal: payTotal,
-      winUnits: payTotal / c.lines.length,
+      /* ganho total em múltiplos da APOSTA: as linhas pagam por linha
+         (aposta ÷ nº de linhas) e o dinheiro paga sobre a aposta cheia */
+      winUnits: payTotal / c.lines.length + moneyWin,
+      lineUnits: payTotal / c.lines.length,
       scatters: scatters,
       scatterCells: scatterCells,
+      moneyCells: moneyCells,
+      moneyCount: moneyCells.length,
+      moneySum: moneySum,
+      moneyHit: moneyHit,
+      moneyWin: moneyWin,
       free: scatters >= c.scatterNeed ? c.freeSpins : 0
     };
   }
 
   function spin(c, rng) {
-    return evaluate(c, drawGrid(c, rng || Math.random));
+    rng = rng || Math.random;
+    var grid = drawGrid(c, rng);
+    return evaluate(c, grid, drawMoney(c, grid, rng));
   }
 
   function seeded(seed) {
@@ -316,11 +431,12 @@
 
   function simulate(c, rounds, rng) {
     rng = rng || Math.random;
-    var sum = 0, sumsq = 0, hits = 0, frees = 0;
+    var sum = 0, sumsq = 0, hits = 0, frees = 0, monies = 0, moneySum = 0;
     for (var i = 0; i < rounds; i++) {
       var r = spin(c, rng);
       var won = r.winUnits;
-      if (r.wins.length) hits++;
+      if (r.moneyHit) { monies++; moneySum += r.moneyWin; }
+      if (r.wins.length || r.moneyHit) hits++;
       if (r.free) {
         frees++;
         for (var f = 0; f < r.free; f++) won += spin(c, rng).winUnits * c.freeMult;
@@ -335,7 +451,9 @@
       sd: Math.sqrt(variance),
       se: Math.sqrt(variance / rounds),
       hitRate: hits / rounds,
-      freeRate: frees / rounds
+      freeRate: frees / rounds,
+      moneyRate: monies / rounds,
+      moneyRTP: moneySum / rounds
     };
   }
 
@@ -345,6 +463,9 @@
     LINES: LINES,
     prepare: prepare,
     drawGrid: drawGrid,
+    drawMoney: drawMoney,
+    drawValue: drawValue,
+    moneyExpectation: moneyExpectation,
     evaluate: evaluate,
     spin: spin,
     simulate: simulate,
@@ -414,7 +535,23 @@
     for (var i = 0; i < this.reels.length; i++) this.place(this.reels[i]);
   };
 
-  ReelView.prototype.cell = function (symIndex) {
+  /**
+   * Monta uma célula.
+   *
+   * @param {number|{s:number,v:number}} item  índice do símbolo, ou o par
+   *        símbolo + valor quando é o símbolo de dinheiro. Dinheiro sem valor
+   *        definido (os que passam voando durante o giro) sorteia o seu.
+   *
+   * O valor sai impresso POR CIMA da arte, como nos jogos originais — por
+   * isso a moeda foi desenhada com o miolo liso. Quem formata é a sala
+   * (`view.moneyFormat`), para a engine não precisar saber de moeda nem de
+   * tamanho de aposta.
+   */
+  ReelView.prototype.cell = function (item) {
+    var obj = item && typeof item === 'object';
+    var symIndex = obj ? item.s : item;
+    var value = obj ? item.v : null;
+
     var s = this.c.all[symIndex];
     var el = document.createElement('div');
     el.className = 'gm-cell';
@@ -431,7 +568,22 @@
       span.textContent = s.char;
       el.appendChild(span);
     }
+
+    if (s.isMoney) {
+      el.classList.add('is-money');
+      if (value == null) value = drawValue(this.c, Math.random);
+      el.setAttribute('data-value', value);
+      var tag = document.createElement('b');
+      tag.className = 'gm-val';
+      tag.textContent = this.moneyFormat(value);
+      el.appendChild(tag);
+    }
     return el;
+  };
+
+  /** Trocável pela sala: recebe o multiplicador, devolve o texto da célula. */
+  ReelView.prototype.moneyFormat = function (v) {
+    return v.toFixed(2).replace('.', ',');
   };
 
   ReelView.prototype.place = function (r) {
@@ -439,12 +591,15 @@
   };
 
   /** Pinta uma grade parada (1 célula de folga em cima e embaixo). */
-  ReelView.prototype.showGrid = function (grid) {
+  ReelView.prototype.showGrid = function (grid, money) {
+    money = money || {};
     for (var col = 0; col < this.c.cols; col++) {
       var r = this.reels[col];
       r.strip.innerHTML = '';
       r.strip.appendChild(this.cell(drawSymbol(this.c, Math.random)));
-      for (var row = 0; row < r.rows; row++) r.strip.appendChild(this.cell(grid[col][row]));
+      for (var row = 0; row < r.rows; row++) {
+        r.strip.appendChild(this.cell({ s: grid[col][row], v: money[col + ':' + row] }));
+      }
       r.strip.appendChild(this.cell(drawSymbol(this.c, Math.random)));
       r.pos = 0;
       this.place(r);
@@ -493,7 +648,7 @@
    *    em que o rolo começa a parar.
    *
    * @param {Array}  grid  resultado já sorteado pela matemática
-   * @param {object} opts  {turbo, anticipate, onStop(col)}
+   * @param {object} opts  {turbo, anticipate, money, onStop(col)}
    * @returns {Promise}
    */
   ReelView.prototype.spinTo = function (grid, opts) {
@@ -530,9 +685,12 @@
         /* Fila de entrada, de baixo para cima. Os rolos mais baixos ganham
            células de folga a mais, para que TODOS tenham a mesma fila — é o
            que mantém a frenagem sincronizada. */
+        var money = opts.money || {};
         var q = [];
         for (var k = 0; k < maxRows - r.rows; k++) q.push(drawSymbol(self.c, Math.random));
-        for (var row = r.rows - 1; row >= 0; row--) q.push(grid[col][row]);
+        for (var row = r.rows - 1; row >= 0; row--) {
+          q.push({ s: grid[col][row], v: money[col + ':' + row] });
+        }
         q.push(drawSymbol(self.c, Math.random));
         r.pendingQueue = q;
 
