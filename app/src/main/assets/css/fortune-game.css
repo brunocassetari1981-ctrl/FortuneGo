@@ -12,6 +12,16 @@
   --t1: #7f1d1d;
   --t2: #f59e0b;
   --reel: #35135a;
+  /* Medidas do enquadramento. O JS lê estas mesmas variáveis para calcular
+     o tamanho da célula, então CSS e cálculo nunca saem de sincronia. */
+  --stage-pad-x: 10px;   /* respiro lateral do palco */
+  --stage-pad-y: 6px;    /* respiro inferior do palco */
+  --side-col: 20px;      /* coluna dos números de linha, cada lado */
+  --grid-gap: 4px;       /* espaço entre números e moldura */
+  --frame-pad: 9px;      /* espessura da moldura dourada */
+  --reel-gap: 5px;       /* espaço entre cilindros */
+  --machine-extra: 4px;  /* folga além da meia célula do rolo central */
+  --machine-max: 460px;  /* teto em tablet, para não virar um painel gigante */
   --gold-1: #ffe9a8;
   --gold-2: #f6c33c;
   --gold-3: #b26a12;
@@ -152,9 +162,11 @@
 .fr-stage {
   flex: 1;
   position: relative;
-  display: flex; align-items: flex-end; justify-content: center;
+  /* centrado: sobrando espaço, ele se reparte igual em cima e embaixo em
+     vez de empurrar tudo para baixo e deixar um vão só no topo */
+  display: flex; align-items: center; justify-content: center;
   min-height: 0;
-  padding: 0 10px 6px;
+  padding: 0 var(--stage-pad-x) var(--stage-pad-y);
   overflow: hidden;
 }
 .fr-backdrop {
@@ -254,13 +266,13 @@
   position: relative;
   z-index: 2;
   width: 100%;
-  max-width: 420px;
+  max-width: var(--machine-max);
   display: grid;
-  grid-template-columns: 20px 1fr 20px;
+  grid-template-columns: var(--side-col) 1fr var(--side-col);
   align-items: center;
-  gap: 4px;
+  gap: var(--grid-gap);
   /* folga para o rolo central, que sobe e desce meia célula */
-  padding-block: calc(var(--cell, 80px) * 0.5 + 4px);
+  padding-block: calc(var(--cell, 80px) * 0.5 + var(--machine-extra));
 }
 
 /* números das linhas, como no original */
@@ -289,7 +301,7 @@
 
 .fr-frame {
   position: relative;
-  padding: 9px;
+  padding: var(--frame-pad);
   border-radius: 16px;
   background:
     linear-gradient(180deg, var(--gold-1) 0%, var(--gold-2) 22%, var(--gold-3) 60%, var(--gold-2) 100%);
@@ -316,7 +328,7 @@
   z-index: 1;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 5px;
+  gap: var(--reel-gap);
   align-items: start;
 }
 
@@ -380,18 +392,26 @@
   height: var(--cell, 80px);
   flex: 0 0 var(--cell, 80px);
   display: flex; align-items: center; justify-content: center;
-  font-size: calc(var(--cell, 80px) * 0.5);
+  font-size: calc(var(--cell, 80px) * 0.52);
   line-height: 1;
   position: relative;
   user-select: none;
+  /* Cada posição é um painel opaco com sulco entre elas. Antes a célula
+     era transparente e via-se o fundo do cilindro nos cantos — dava a
+     impressão de grelha vazia, principalmente com símbolo estreito. */
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(0, 0, 0, 0.12));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3);
 }
 .gm-cell img {
-  width: 86%; height: 86%; object-fit: contain;
+  /* ocupa quase toda a posição: a figura é que tem de preencher o rolo */
+  width: 96%; height: 96%; object-fit: contain;
   filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.55));
 }
 
 /* curinga = o bicho do jogo, com a faixa dourada WILD */
-.gm-cell.is-wild img { width: 92%; height: 92%; filter: drop-shadow(0 0 9px rgba(250, 204, 21, 0.9)); }
+.gm-cell.is-wild img { width: 100%; height: 100%; filter: drop-shadow(0 0 9px rgba(250, 204, 21, 0.9)); }
 .gm-cell.is-wild::after {
   content: 'WILD';
   position: absolute;
@@ -1169,4 +1189,30 @@ body.shake { animation: gmShake 0.6s cubic-bezier(.36, .07, .19, .97); }
     animation: none !important;
   }
   .gm-bigwin .kind .ltr { opacity: 1; }
+}
+
+/* ======================================================================
+   TELAS BAIXAS (paisagem, ou telemóvel pequeno com barras do sistema)
+   O palco é o que sobra depois das barras fixas. Quando sobra pouco, a
+   célula encolhe demais e a máquina fica um selo no meio da tela. Em vez
+   disso, recolhemos o que é decorativo e devolvemos essa altura ao jogo.
+   ====================================================================== */
+
+@media (max-height: 620px) {
+  .fr-jackpot { display: none; }          /* faixa de prémios acumulados */
+  .fr-marquee { display: none; }          /* letreiro que corre */
+  .gm-body { --stage-pad-y: 3px; }
+  .fr-mascot { width: 32%; opacity: 0.9; }
+}
+
+@media (max-height: 460px) {
+  .fr-task { display: none; }             /* barra de tarefa */
+  .fr-mascot { display: none; }           /* sem altura para o personagem */
+  .gm-body { --machine-extra: 2px; --frame-pad: 6px; }
+}
+
+/* Tela muito estreita: os números das linhas comem largura que falta
+   para os símbolos. */
+@media (max-width: 330px) {
+  .gm-body { --side-col: 13px; --grid-gap: 2px; --reel-gap: 3px; --stage-pad-x: 6px; }
 }

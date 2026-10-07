@@ -179,19 +179,27 @@ var document = {
   createElement: function (t) { return new El(t); },
   addEventListener: function () {},
   querySelector: function (sel) {
-    if (sel.charAt(0) === '#') {
-      var id = sel.slice(1);
-      if (!registry[id]) {
-        registry[id] = new El('div');
-        registry[id].setAttribute('id', id);
-        body.appendChild(registry[id]);
+    /* cria sob demanda, por id OU por classe — o controlador procura
+       '.fr-stage' e '.fr-machine' para calcular o enquadramento, e sem
+       eles essa parte do código nunca era exercitada aqui */
+    if (sel.charAt(0) === '#' || sel.charAt(0) === '.') {
+      var chave = sel.slice(1);
+      if (!registry[chave]) {
+        var el = new El('div');
+        if (sel.charAt(0) === '#') el.setAttribute('id', chave);
+        else el.className = chave;
+        body.appendChild(el);
+        registry[chave] = el;
       }
-      return registry[id];
+      return registry[chave];
     }
     return body.querySelector(sel);
   },
   querySelectorAll: function (sel) { return body.querySelectorAll(sel); }
 };
+
+var winHandlers = {};
+function fireWindow(tipo) { (winHandlers[tipo] || []).forEach(function (fn) { fn({ type: tipo }); }); }
 
 var store = {};
 var sandbox = {
@@ -222,7 +230,7 @@ var sandbox = {
   decodeURIComponent: decodeURIComponent,
   encodeURIComponent: encodeURIComponent,
   isNaN: isNaN,
-  addEventListener: function () {},
+  addEventListener: function (t, fn) { (winHandlers[t] = winHandlers[t] || []).push(fn); },
   innerWidth: 390,
   innerHeight: 844
 };
@@ -269,13 +277,70 @@ function run(file) {
     'rolos com 3, 4 e 3 posições (obtido ' + [tira(0), tira(1), tira(2)].map(function (n) { return n - 2; }) + ')');
   ok(reels.children[1].getAttribute('data-rows') === '4', 'o rolo central é o mais alto');
 
-  /* Proporção da célula: medida nos prints do jogo original, a altura é
-     ~0,78 da largura. Com célula quadrada os rolos ficavam compridos. */
-  var cellPx = parseFloat(registry.frame.style.getPropertyValue('--cell'));
-  var colW = reels.clientWidth / 3;
-  var razao = cellPx / colW;
-  ok(Math.abs(razao - 0.78) < 0.03,
-    'célula mais larga que alta, como no original (altura/largura = ' + razao.toFixed(2) + ')');
+  /* ------------------- ENQUADRAMENTO NA TELA -------------------
+     As medidas de folga são as mesmas que o CSS declara em .gm-body;
+     se mudarem lá, mudam aqui, e o cálculo continua valendo. */
+  var PADX = 10 * 2, PADY = 6, SIDE = 20, GGAP = 4, FPAD = 9, RGAP = 5, EXTRA = 4;
+  var FIXO_X = 2 * SIDE + 2 * GGAP + 2 * FPAD + 2 * RGAP;   // 76
+  var FIXO_Y = 2 * FPAD + 2 * EXTRA;                        // 26
+
+  var stageEl = document.querySelector('.fr-stage');
+  var machineEl = document.querySelector('.fr-machine');
+
+  function medir() {
+    var cell = parseFloat(registry.frame.style.getPropertyValue('--cell'));
+    var larg = parseFloat(machineEl.style.width);
+    return {
+      cell: cell,
+      larg: larg,
+      colW: (larg - FIXO_X) / 3,
+      altura: cell * 4 + FIXO_Y,          // o rolo central é quem manda
+      reels: parseFloat(reels.style.height)
+    };
+  }
+
+  var m = medir();
+
+  /* Proporção: medida nos prints do original, a altura da posição é ~0,78
+     da largura. Com célula quadrada os rolos ficavam compridos. */
+  ok(Math.abs(m.cell / m.colW - 0.78) < 0.03,
+    'célula mais larga que alta, como no original (altura/largura = ' +
+    (m.cell / m.colW).toFixed(2) + ')');
+
+  /* O ponto do pedido: nada cortado e nada de margem desproporcional. */
+  ok(m.altura <= stageEl.clientHeight - PADY,
+    'a máquina inteira cabe na altura (' + m.altura + 'px de ' +
+    (stageEl.clientHeight - PADY) + 'px)');
+  ok(m.larg <= stageEl.clientWidth - PADX,
+    'a máquina inteira cabe na largura (' + m.larg + 'px de ' +
+    (stageEl.clientWidth - PADX) + 'px)');
+  ok(Math.abs(m.reels - m.cell * 3) < 0.6,
+    'a área dos rolos tem exatamente 3 posições de altura, sem sobra');
+
+  /* Tela baixa (paisagem): agora quem manda é a ALTURA. A célula encolhe
+     E a máquina estreita junto — se só a célula encolhesse, as colunas
+     continuariam largas e sobraria fundo dos lados de cada figura, que é
+     a "grelha vazia" relatada. */
+  var altoAntes = stageEl.clientHeight;
+  stageEl.clientHeight = 160;
+  fireWindow('resize');
+  await flush();
+  var baixo = medir();
+
+  ok(baixo.cell < m.cell,
+    'em tela baixa a célula encolhe (' + m.cell + 'px → ' + baixo.cell + 'px)');
+  ok(baixo.larg < m.larg,
+    'e a máquina estreita junto, para a grelha não ficar com buracos (' +
+    m.larg + 'px → ' + baixo.larg + 'px)');
+  ok(Math.abs(baixo.cell / baixo.colW - 0.78) < 0.03,
+    'a proporção da posição se mantém na tela baixa (' +
+    (baixo.cell / baixo.colW).toFixed(2) + ')');
+  ok(baixo.altura <= 160 - PADY,
+    'e continua cabendo sem cortar (' + baixo.altura + 'px de ' + (160 - PADY) + 'px)');
+
+  stageEl.clientHeight = altoAntes;
+  fireWindow('resize');
+  await flush();
 
   /* Velocidade do giro: a 26 células/s virava borrão. Tem de ficar numa
      faixa em que dê para ver os símbolos passando. */

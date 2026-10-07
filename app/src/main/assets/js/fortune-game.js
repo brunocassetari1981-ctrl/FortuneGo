@@ -737,25 +737,86 @@
    */
   var CELL_RATIO = 0.78;
 
+  /* ------------------------- ENQUADRAMENTO -------------------------
+     A máquina tem de caber INTEIRA em qualquer telemóvel: nada cortado,
+     nada de margem desproporcional.
+
+     Quem manda na altura é o rolo central — tem 4 posições e sai meia
+     célula para fora em cada ponta:
+
+         altura da máquina = célula*4 + 2*moldura + 2*folga
+
+     Então calculamos o tamanho de célula que cabe pela LARGURA e o que
+     cabe pela ALTURA, e ficamos com o menor dos dois.
+
+     O detalhe que faltava: quando é a ALTURA que manda, a célula fica
+     menor do que a largura disponível permitiria e as colunas, que são
+     1fr, continuavam largas — sobrava fundo dos dois lados de cada
+     figura e a grelha parecia vazia. Por isso a largura da máquina é
+     reduzida para casar exatamente com a célula escolhida. */
+
+  var MEDIDAS = {};
+  function cssPx(nome, padrao) {
+    if (MEDIDAS[nome] !== undefined) return MEDIDAS[nome];
+    var n = NaN;
+    if (typeof getComputedStyle === 'function' && document.body) {
+      n = parseFloat(getComputedStyle(document.body).getPropertyValue(nome));
+    }
+    MEDIDAS[nome] = isFinite(n) ? n : padrao;
+    return MEDIDAS[nome];
+  }
+
   function layout() {
     var reels = $('#reels');
     if (!reels) return;
-    var w = reels.clientWidth;
-    if (!w) return;
-    var colW = w / c.cols;
-    var cell = Math.round(colW * CELL_RATIO);
-
-    // não deixa a máquina estourar a altura disponível do palco
     var stage = $('.fr-stage');
-    if (stage && stage.clientHeight) {
-      var teto = Math.floor((stage.clientHeight - 150) / 4);   // 4 = rolo central
-      if (teto > 40 && cell > teto) cell = teto;
+    var machine = $('.fr-machine');
+
+    var linhasVisiveis = c.rowsPer[0];                       // 3
+    var linhasMax = Math.max.apply(null, c.rowsPer);         // 4 (rolo central)
+
+    var padX = cssPx('--stage-pad-x', 10) * 2;
+    var padY = cssPx('--stage-pad-y', 6);
+    var sideCol = cssPx('--side-col', 20);
+    var gridGap = cssPx('--grid-gap', 4);
+    var framePad = cssPx('--frame-pad', 9);
+    var reelGap = cssPx('--reel-gap', 5);
+    var folga = cssPx('--machine-extra', 4);
+    var maxW = cssPx('--machine-max', 460);
+
+    /* tudo que ocupa largura sem ser célula */
+    var fixoX = 2 * sideCol + 2 * gridGap + 2 * framePad + (c.cols - 1) * reelGap;
+    /* tudo que ocupa altura sem ser célula */
+    var fixoY = 2 * framePad + 2 * folga;
+
+    var telaW = (stage && stage.clientWidth) || reels.clientWidth || 360;
+    var dispW = Math.min(telaW - padX, maxW);
+    var porLargura = ((dispW - fixoX) / c.cols) * CELL_RATIO;
+
+    var porAltura = Infinity;
+    var telaH = stage && stage.clientHeight;
+    if (telaH) porAltura = (telaH - padY - fixoY) / linhasMax;
+
+    var cell = Math.max(30, Math.floor(Math.min(porLargura, porAltura)));
+
+    /* a máquina encolhe até casar com a célula — grelha sempre cheia */
+    if (machine && machine.style) {
+      var larguraCasada = Math.ceil((cell / CELL_RATIO) * c.cols + fixoX);
+      machine.style.width = Math.min(dispW, larguraCasada) + 'px';
     }
 
-    reels.style.height = (cell * 3) + 'px';
+    reels.style.height = (cell * linhasVisiveis) + 'px';
     $('#frame').style.setProperty('--cell', cell + 'px');
     document.body.style.setProperty('--cell', cell + 'px');
-    if (view) view.measure();
+
+    /* uma única fonte de verdade para o tamanho: a sala manda, o motor
+       obedece. Antes o motor media o DOM por conta própria e, quando as
+       duas contas divergiam (resize, troca de orientação), abria uma
+       fresta entre os símbolos. */
+    if (view) {
+      if (view.setCell) view.setCell(cell);
+      else view.measure();
+    }
   }
 
   /* ---------------------------------- Boot ---------------------------------- */

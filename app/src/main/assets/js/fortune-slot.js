@@ -478,12 +478,16 @@
    * ====================================================================== */
 
   var BUFFER = 2;      // células extras fora da janela (1 acima, 1 abaixo)
-  /* Velocidade em alturas de célula por milissegundo. A 26 células/s (o valor
-     anterior) o símbolo trocava a cada 1,5 quadro e o rolo virava um borrão —
-     não dava para ver as figuras girando. A 9/s cada símbolo fica ~6 quadros
-     na tela, que é o ritmo dos jogos originais. */
-  var SPEED = 0.009;
-  var SPEED_TURBO = 0.016;
+  /* Velocidade em alturas de célula por milissegundo.
+       26/s (o valor original) → borrão, 1,5 quadro por símbolo
+        9/s                    → dava para ver, mas ainda corrido
+        6,2/s                  → ~9,7 quadros por símbolo: dá tempo de
+                                 reconhecer cada figura enquanto passa
+     A frenagem também fica mais longa de brinde, porque a duração dela é
+     calculada a partir da velocidade (T = 3·d/v): quanto mais devagar o
+     rolo corre, mais suave ele encosta. */
+  var SPEED = 0.0062;
+  var SPEED_TURBO = 0.0105;
   var BRAKE = 3;       // a frenagem cobre os 3 últimos símbolos, igual em todo rolo
 
   function now() {
@@ -527,12 +531,37 @@
     }
   };
 
+  /**
+   * Define o tamanho da célula a partir de fora (a sala calcula o
+   * enquadramento e manda). É a FONTE ÚNICA: o mesmo número vai para o
+   * `--cell` do CSS e para o `cellH` usado no `translateY`.
+   *
+   * Enquanto eram duas contas separadas — o CSS com o seu `--cell` e o JS
+   * medindo o DOM —, bastava uma discordar da outra (resize, troca de
+   * orientação, medida tirada antes do layout) para a tira deslizar meio
+   * pixel e abrir uma fresta de fundo entre os símbolos.
+   */
+  ReelView.prototype.setCell = function (px) {
+    if (!(px > 0)) return;
+    this.cellH = px;
+    this.root.style.setProperty('--cell', px + 'px');
+    for (var i = 0; i < this.reels.length; i++) this.place(this.reels[i]);
+  };
+
+  /** Mede o DOM — só para quando ninguém disse o tamanho ainda. */
   ReelView.prototype.measure = function () {
     var h = this.reels[0] ? this.reels[0].el.clientHeight : 0;
-    if (!h) return;
-    this.cellH = h / this.reels[0].rows;
-    this.root.style.setProperty('--cell', this.cellH + 'px');
-    for (var i = 0; i < this.reels.length; i++) this.place(this.reels[i]);
+    if (h) return this.setCell(h / this.reels[0].rows);
+
+    /* Sem altura ainda: em vez de desistir (e deixar o cellH em zero, que
+       é o que fazia a tira ficar fora de lugar no primeiro desenho),
+       aproveita o valor que o CSS já tem. */
+    if (this.cellH) return;
+    var lido = 0;
+    if (typeof getComputedStyle === 'function') {
+      lido = parseFloat(getComputedStyle(this.root).getPropertyValue('--cell'));
+    }
+    this.setCell(isFinite(lido) && lido > 0 ? lido : 80);
   };
 
   /**
@@ -660,7 +689,7 @@
     this.measure();
     if (!this.cellH) this.cellH = 80;      // layout ainda não mediu: valor de reserva
 
-    var runMs = turbo ? 180 : 300;         // giro solto antes de engatar a fila
+    var runMs = turbo ? 240 : 430;         // giro solto antes de engatar a fila
     var stagger = turbo ? 100 : 200;       // atraso entre rolos
     var vmax = turbo ? SPEED_TURBO : SPEED;
     var maxRows = Math.max.apply(null, this.c.rowsPer);
