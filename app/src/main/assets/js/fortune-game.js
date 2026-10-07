@@ -1,9 +1,12 @@
 /*!
  * FortuneGo — controlador da sala de jogo (game.html?id=<jogo>)
  *
- * Junta as três peças: catálogo (fortune-games.js), matemática + rolos
- * (fortune-slot.js) e os efeitos do app (fortune-enhance.js → window.FortuneGo).
- * O saldo é o MESMO do lobby: ambos leem/gravam localStorage 'fortunego_state'.
+ * Visual no modelo "Fortune" (PG Soft): faixa de jackpot, barra de tarefa,
+ * mascote sobre a máquina, rolo central elevado, números das linhas nas
+ * laterais, letreiro e a barra de controles com multiplicador / Rápido / Auto.
+ *
+ * A JOGABILIDADE é a mesma de antes — doSpin → settle → next — só mudou a
+ * apresentação. Saldo compartilhado com o lobby via localStorage.
  */
 (function () {
   'use strict';
@@ -42,37 +45,42 @@
 
   var state = load();
   var betIndex = (function () {
-    var best = 0;
-    for (var i = 0; i < BETS.length; i++) if (BETS[i] <= state.bet) best = i;
-    return best;
+    var b = 0;
+    for (var i = 0; i < BETS.length; i++) if (BETS[i] <= state.bet) b = i;
+    return b;
   }());
   state.bet = BETS[betIndex];
 
-  var money = function (v) {
-    return 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  var num = function (v) {
+    return Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
+  var money = function (v) { return 'R$ ' + num(v); };
 
   /* ------------------------------- Variáveis ------------------------------- */
 
   var view = null;
   var busy = false;
   var turbo = false;
-  var auto = 0;              // 0 parado · n giros restantes · -1 infinito
+  var auto = 0;                 // 0 parado · n giros · -1 infinito
   var freeLeft = 0;
   var freeWon = 0;
   var shownBalance = state.balance;
+  var sessionWins = 0;          // para a barra de tarefa
+  var hideWinTimer = null;
 
   var LINE_COLORS = ['#facc15', '#22d3ee', '#f472b6', '#4ade80', '#fb923c'];
+  var STEP_RATIO = 0.18;        // quanto o rolo central sobe (fração da célula)
 
   /* -------------------------------- Helpers -------------------------------- */
 
-  function animateTo(el, from, to, dur) {
+  function animateTo(el, from, to, dur, fmt) {
+    var f = fmt || num;
     var t0 = (window.performance && performance.now) ? performance.now() : Date.now();
     function frame() {
       var now = (window.performance && performance.now) ? performance.now() : Date.now();
       var p = Math.min(1, (now - t0) / (dur || 600));
       var e = 1 - Math.pow(1 - p, 3);
-      el.textContent = money(from + (to - from) * e);
+      el.textContent = f(from + (to - from) * e);
       if (p < 1) requestAnimationFrame(frame);
     }
     requestAnimationFrame(frame);
@@ -86,37 +94,96 @@
   function setWinbar(text, cls) {
     var el = $('#winbar');
     el.textContent = text;
-    el.className = 'gm-winbar' + (cls ? ' ' + cls : '');
+    clearTimeout(hideWinTimer);
+    if (cls === 'win') {
+      el.classList.add('on');
+      hideWinTimer = setTimeout(function () { el.classList.remove('on'); }, turbo ? 1200 : 2600);
+    } else {
+      el.classList.remove('on');
+    }
   }
 
   function sound(f, d, t) { if (FG.sound) FG.sound(f, d, t); }
   function haptic(ms) { if (FG.haptic) FG.haptic(ms); }
 
+  /* ------------------------------ Faixa de jackpot ------------------------------ */
+
+  var jp = { grand: 13523038.67, major: 975030.79, minor: 2, mini: 1 };
+
+  function tickJackpot() {
+    jp.grand += Math.random() * 180;
+    jp.major += Math.random() * 14;
+    jp.minor += Math.random() * 0.03;
+    jp.mini += Math.random() * 0.01;
+    $('#jpGrand').textContent = num(jp.grand);
+    $('#jpMajor').textContent = num(jp.major);
+    $('#jpMinor').textContent = num(jp.minor);
+    $('#jpMini').textContent = num(jp.mini);
+  }
+
+  /* ------------------------------ Barra de tarefa ------------------------------ */
+
+  function renderTask() {
+    var done = Math.min(10, sessionWins);
+    $('#taskFill').style.width = (done * 10) + '%';
+    $('#taskText').textContent = 'Valor total ganho (' + done + '/10)';
+  }
+
+  /* --------------------------- Números das linhas --------------------------- */
+
+  function buildLineNumbers() {
+    var left = [[], [], []], right = [[], [], []];
+    c.lines.forEach(function (l, i) {
+      left[l[0]].push(i + 1);
+      right[l[c.cols - 1]].push(i + 1);
+    });
+    var render = function (groups) {
+      return groups.map(function (nums) {
+        return '<div class="ln">' + nums.map(function (n) {
+          return '<b data-line="' + (n - 1) + '">' + n + '</b>';
+        }).join('') + '</div>';
+      }).join('');
+    };
+    $('#linesLeft').innerHTML = render(left);
+    $('#linesRight').innerHTML = render(right);
+  }
+
+  function markLineNumbers(wins) {
+    var all = document.querySelectorAll('.fr-side b');
+    for (var i = 0; i < all.length; i++) all[i].classList.remove('hit');
+    wins.forEach(function (w) {
+      var hit = document.querySelectorAll('.fr-side b[data-line="' + w.line + '"]');
+      for (var j = 0; j < hit.length; j++) hit[j].classList.add('hit');
+    });
+  }
+
   /* ------------------------------ Linhas (SVG) ------------------------------ */
 
   function buildLines() {
-    var svg = $('#lines');
     var X = [50, 150, 250], Y = [50, 150, 250];
+    var off = STEP_RATIO * 100;          // o rolo do meio sobe: a linha acompanha
     var out = '';
     for (var i = 0; i < c.lines.length; i++) {
       var l = c.lines[i];
       var d = 'M 0,' + Y[l[0]] +
               ' L ' + X[0] + ',' + Y[l[0]] +
-              ' L ' + X[1] + ',' + Y[l[1]] +
+              ' L ' + X[1] + ',' + (Y[l[1]] - off) +
               ' L ' + X[2] + ',' + Y[l[2]] +
               ' L 300,' + Y[l[2]];
       out += '<path data-line="' + i + '" d="' + d + '" stroke="' + LINE_COLORS[i % LINE_COLORS.length] +
              '" style="color:' + LINE_COLORS[i % LINE_COLORS.length] + '"></path>';
     }
-    svg.innerHTML = out;
+    $('#lines').innerHTML = out;
   }
 
   function clearLines() {
     var paths = $('#lines').querySelectorAll('path');
     for (var i = 0; i < paths.length; i++) paths[i].classList.remove('on');
+    markLineNumbers([]);
   }
 
   function showLines(wins) {
+    markLineNumbers(wins);
     wins.forEach(function (w, i) {
       setTimeout(function () {
         var p = $('#lines').querySelector('path[data-line="' + w.line + '"]');
@@ -148,12 +215,11 @@
 
   function bigWin(amount, ratio) {
     var box = $('#bigwin');
-    var kind = ratio >= 100 ? 'JACKPOT!' : (ratio >= 40 ? 'MEGA VITÓRIA' : 'GRANDE VITÓRIA');
-    $('#bwKind').textContent = kind;
+    $('#bwKind').textContent = ratio >= 100 ? 'JACKPOT!' : (ratio >= 40 ? 'MEGA VITÓRIA' : 'GRANDE VITÓRIA');
     $('#bwMult').textContent = ratio.toFixed(1).replace('.', ',') + '× a sua aposta';
     $('#bwAmount').textContent = money(0);
     box.classList.add('on');
-    animateTo($('#bwAmount'), 0, amount, 1100);
+    animateTo($('#bwAmount'), 0, amount, 1100, money);
     if (FG.confetti) FG.confetti();
     [660, 880, 1100, 1320, 1560].forEach(function (f, i) {
       setTimeout(function () { sound(f, 0.17, 'sine'); }, i * 120);
@@ -176,7 +242,7 @@
   function doSpin(isFree) {
     if (busy) return;
     if (!isFree && state.balance < state.bet) {
-      if (FG.toast) FG.toast('Saldo insuficiente — volte ao lobby e deposite 💳');
+      if (FG.toast) FG.toast('Saldo insuficiente — toque no + para depositar 💳');
       stopAuto();
       return;
     }
@@ -185,6 +251,7 @@
     setSpinUI(true);
     clearLines();
     setWinbar(isFree ? 'Giro grátis…' : 'Girando…', '');
+    $('#winValue').textContent = num(0);
 
     if (!isFree) {
       state.balance -= state.bet;
@@ -197,7 +264,6 @@
 
     var res = M.spin(c);
 
-    // suspense no último rolo quando os dois primeiros já trouxeram scatter
     var early = 0;
     for (var col = 0; col < 2; col++) {
       for (var row = 0; row < c.rows; row++) {
@@ -225,24 +291,26 @@
       showLines(res.wins);
       state.balance += amount;
       state.wins++;
+      sessionWins++;
+      renderTask();
       if (amount > state.best) state.best = amount;
       if (isFree) freeWon += amount;
 
+      animateTo($('#winValue'), 0, amount, turbo ? 350 : 700);
+
       var top = res.wins.slice().sort(function (a, b) { return b.pay - a.pay; })[0];
-      var face = c.all[top.symbol];
-      var label = (face.img ? game.chars[0] : face.char);
-      state.history.unshift(game.name + ' · ' + label + label + label +
+      var face = c.all[top.symbol].char;
+      state.history.unshift(game.name + ' · ' + face + face + face +
         ' · +' + money(amount) + (isFree ? ' (grátis ' + mult + '×)' : ''));
       state.history = state.history.slice(0, 12);
 
-      setWinbar((isFree ? '🎁 ' : '🎉 ') + 'Ganhou ' + money(amount) +
-                (res.wins.length > 1 ? ' · ' + res.wins.length + ' linhas' : ''), 'win');
+      setWinbar((isFree ? '🎁 ' : '') + 'GANHOU ' + money(amount), 'win');
       renderBalance();
       if (FG.hapticWin) FG.hapticWin(); else haptic(40);
       if (ratio >= 15) bigWin(amount, ratio);
       else if (FG.coins) FG.coins(window.innerWidth / 2, window.innerHeight * 0.45, 8);
     } else {
-      setWinbar(res.scatters === 2 ? 'Quase! Faltou 1 scatter 😮' : 'Não foi dessa vez 🍀', 'lose');
+      setWinbar(res.scatters === 2 ? 'Quase! Faltou 1 scatter 😮' : 'Não foi dessa vez 🍀', '');
       if (!isFree) {
         state.history.unshift(game.name + ' · −' + money(state.bet));
         state.history = state.history.slice(0, 12);
@@ -283,10 +351,10 @@
   function beginFree(n) {
     freeLeft = n;
     freeWon = 0;
-    $('#marquee').classList.add('free');
+    $('#freeBanner').classList.add('on');
     $('#fsLeft').textContent = n;
     $('#fsMult').textContent = c.freeMult + '×';
-    setWinbar('🎁 ' + n + ' GIROS GRÁTIS com ' + c.freeMult + '× de multiplicador!', 'win');
+    setWinbar('🎁 ' + n + ' GIROS GRÁTIS · ' + c.freeMult + '×', 'win');
     if (FG.confetti) FG.confetti();
     if (FG.toast) FG.toast(n + ' giros grátis! Multiplicador ' + c.freeMult + '× 🎁');
     setSpinUI(true);
@@ -294,11 +362,13 @@
   }
 
   function endFree() {
-    $('#marquee').classList.remove('free');
-    setWinbar(freeWon > 0
-      ? '🎁 Giros grátis renderam ' + money(freeWon)
-      : 'Giros grátis encerrados', freeWon > 0 ? 'win' : '');
-    if (freeWon > 0 && FG.confetti) FG.confetti();
+    $('#freeBanner').classList.remove('on');
+    if (freeWon > 0) {
+      setWinbar('🎁 Giros grátis renderam ' + money(freeWon), 'win');
+      if (FG.confetti) FG.confetti();
+    } else {
+      setWinbar('Giros grátis encerrados', '');
+    }
     freeLeft = 0;
     setSpinUI(false);
     if (auto !== 0) setTimeout(function () { doSpin(false); }, turbo ? 300 : 800);
@@ -309,7 +379,7 @@
   function updateAutoLabel() {
     var btn = $('#autoBtn');
     btn.classList.toggle('on', auto !== 0);
-    btn.textContent = auto === 0 ? 'AUTO' : (auto < 0 ? 'PARAR ∞' : 'PARAR (' + auto + ')');
+    btn.textContent = auto === 0 ? '▶ Auto' : (auto < 0 ? '■ Parar' : '■ Parar (' + auto + ')');
     $('#spinLabel').textContent = freeLeft > 0 ? 'GRÁTIS' : (auto !== 0 ? 'AUTO' : 'GIRAR');
   }
 
@@ -336,19 +406,29 @@
     });
     $('#ptGrid').innerHTML = html;
 
+    var sc = c.all[c.scatterIndex];
     $('#ptRules').innerHTML =
-      '<b>' + c.all[c.wildIndex].char + ' Curinga</b> — substitui qualquer símbolo, menos o scatter.<br>' +
-      '<b>' + c.all[c.scatterIndex].char + ' Scatter</b> — 3 em qualquer posição dão <b>' + c.freeSpins +
+      '<b>Curinga</b> — substitui qualquer símbolo, menos o scatter.<br>' +
+      '<b>Scatter</b> — 3 em qualquer posição dão <b>' + c.freeSpins +
       ' giros grátis</b> com multiplicador <b>' + c.freeMult + '×</b>.<br>' +
-      'Prêmios multiplicam a <b>aposta por linha</b> (aposta total ÷ 5).<br>' +
-      'Maior prêmio possível: <b>' + (c.all[c.wildIndex].pay * 5 / 5).toFixed(0) + '× a aposta total</b> ' +
-      'por rodada cheia de curingas.';
+      'Os prêmios multiplicam a <b>aposta por linha</b> (aposta total ÷ 5).<br>' +
+      'Aposta atual: <b>' + money(state.bet) + '</b> · por linha <b>' + money(state.bet / 5) + '</b>.' +
+      (sc.img ? '' : '');
   }
 
   function openSheet(open) {
+    if (open) buildPaytable();
     $('#paysheet').classList.toggle('open', open);
     if (open && FG.pushModal) FG.pushModal(function () { openSheet(false); });
     else if (!open && FG.popModal) FG.popModal();
+  }
+
+  /* --------------------------------- Aposta --------------------------------- */
+
+  function renderBet() {
+    $('#betVal').textContent = num(state.bet);
+    $('#multVal').textContent = (betIndex + 1) + 'x';
+    $('#betPerLine').textContent = num(state.bet / c.lines.length) + ' / linha';
   }
 
   /* --------------------------------- Layout --------------------------------- */
@@ -359,6 +439,8 @@
     var w = reels.clientWidth;
     if (w) reels.style.height = w + 'px';
     if (view) view.measure();
+    var cell = (reels.clientHeight || w) / c.rows;
+    if (cell) $('#frame').style.setProperty('--step', Math.round(cell * STEP_RATIO) + 'px');
   }
 
   /* ---------------------------------- Boot ---------------------------------- */
@@ -375,32 +457,40 @@
       if (busy || freeLeft) return;
       betIndex = Math.max(0, betIndex - 1);
       state.bet = BETS[betIndex];
-      $('#betVal').textContent = 'R$ ' + state.bet;
-      save(); haptic(8); sound(420, 0.04, 'triangle');
+      renderBet(); save(); haptic(8); sound(420, 0.04, 'triangle');
     });
     $('#betUp').addEventListener('click', function () {
       if (busy || freeLeft) return;
       betIndex = Math.min(BETS.length - 1, betIndex + 1);
       state.bet = BETS[betIndex];
-      $('#betVal').textContent = 'R$ ' + state.bet;
-      save(); haptic(8); sound(560, 0.04, 'triangle');
+      renderBet(); save(); haptic(8); sound(560, 0.04, 'triangle');
     });
 
     $('#turboBtn').addEventListener('click', function () {
       turbo = !turbo;
       this.classList.toggle('on', turbo);
-      if (FG.toast) FG.toast(turbo ? 'Turbo ligado ⚡' : 'Turbo desligado');
+      if (FG.toast) FG.toast(turbo ? 'Modo rápido ligado ⚡' : 'Modo rápido desligado');
       haptic(10);
     });
 
     $('#payBtn').addEventListener('click', function () { openSheet(true); haptic(8); });
+    $('#linesBtn').addEventListener('click', function () { openSheet(true); haptic(8); });
     $('#ptClose').addEventListener('click', function () { openSheet(false); });
     $('#paysheet').addEventListener('click', function (e) {
       if (e.target === this) openSheet(false);
     });
 
+    $('#depositBtn').addEventListener('click', function () {
+      state.balance += 500;
+      save();
+      renderBalance();
+      if (FG.confetti) FG.confetti();
+      if (FG.toast) FG.toast('+ R$ 500,00 creditados 🎉');
+    });
+
     $('#autoBtn').addEventListener('click', function () {
       if (auto !== 0) { stopAuto(); return; }
+      $('#moreBox').classList.remove('open');
       $('#autoBox').classList.toggle('open');
     });
     $('#autoBox').addEventListener('click', function (e) {
@@ -413,11 +503,31 @@
       if (!busy && !freeLeft) doSpin(false);
     });
 
+    $('#moreBtn').addEventListener('click', function () {
+      $('#autoBox').classList.remove('open');
+      $('#moreBox').classList.toggle('open');
+    });
+    $('#moreBox').addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-more]');
+      if (!b) return;
+      this.classList.remove('open');
+      var what = b.getAttribute('data-more');
+      if (what === 'lobby') { save(); location.href = 'index.html'; }
+      else if (what === 'sound') {
+        var on = FG.toggleSound ? FG.toggleSound() : true;
+        if (FG.toast) FG.toast(on ? 'Som ligado 🔊' : 'Som desligado 🔇');
+      } else if (what === 'pay') openSheet(true);
+      else if (what === 'diag' && FG.diagnose) FG.diagnose();
+    });
+
     document.addEventListener('click', function (e) {
-      var box = $('#autoBox');
-      if (box.classList.contains('open') && !e.target.closest('#autoBox') && !e.target.closest('#autoBtn')) {
-        box.classList.remove('open');
-      }
+      ['#autoBox', '#moreBox'].forEach(function (sel) {
+        var box = $(sel);
+        if (!box.classList.contains('open')) return;
+        if (!e.target.closest(sel) && !e.target.closest(sel === '#autoBox' ? '#autoBtn' : '#moreBtn')) {
+          box.classList.remove('open');
+        }
+      });
     });
 
     window.addEventListener('resize', layout);
@@ -425,38 +535,55 @@
     document.addEventListener('visibilitychange', function () { if (document.hidden) save(); });
   }
 
-  function start(iconUrl) {
+  function start() {
     document.body.style.setProperty('--t1', game.theme[0]);
     document.body.style.setProperty('--t2', game.theme[1]);
 
+    var icon = c.all[0].img || (FG.placeholder ? FG.placeholder(game.name) : '');
     $('#gName').textContent = game.name;
-    $('#gMeta').textContent = 'volatilidade ' + (Games.volLabel[game.vol] || game.vol) + ' · 5 linhas';
+    $('#gMeta').textContent = Games.volLabel[game.vol] || game.vol;
     $('#rtpLabel').textContent = 'RTP ' + (c.rtpExact * 100).toFixed(2).replace('.', ',') + '%';
-    $('#gIcon').src = iconUrl || (FG.placeholder ? FG.placeholder(game.name) : '');
-    $('#betVal').textContent = 'R$ ' + state.bet;
-    $('#gBalance').textContent = money(state.balance);
-
-    c.all[0].img = iconUrl || null;          // símbolo premium usa o ícone resolvido
+    $('#gMascot').src = icon;
+    $('#spinIcon').src = icon;
+    $('#marqueeText').textContent =
+      game.name + ' paga até ' + c.all[c.wildIndex].pay + '× por linha · 3 scatters dão ' +
+      c.freeSpins + ' giros grátis com multiplicador ' + c.freeMult + '× · boa sorte!';
+    $('#gBalance').textContent = num(state.balance);
 
     view = new Slot.ReelView($('#reels'), c);
     layout();
     view.showGrid(M.drawGrid(c, Math.random));
 
     buildLines();
+    buildLineNumbers();
     buildPaytable();
+    renderBet();
+    renderTask();
+    tickJackpot();
+    setInterval(tickJackpot, 1300);
     wire();
     updateAutoLabel();
     setSpinUI(false);
   }
 
-  // Resolve o ícone UMA vez (o motor de resgate cuida de caminhos quebrados)
-  // e só então monta os rolos — assim nenhuma célula precisa ser corrigida depois.
-  if (FG.resolve) {
-    var done = false;
-    var go = function (url) { if (done) return; done = true; start(url); };
-    FG.resolve(game.img, go);
-    setTimeout(function () { go(null); }, 2500);   // rede travada? segue com emoji
-  } else {
-    start(game.img);
+  /* Sonda os PNGs dos símbolos UMA vez. O que não existir (arte ainda não
+     desenhada) cai no emoji — assim a sala nunca mostra imagem quebrada. */
+  function resolveArt(done) {
+    var list = c.all.filter(function (s) { return s.img; });
+    if (!FG.resolve || !list.length) return done();
+
+    var pending = list.length, finished = false;
+    var finish = function () {
+      if (finished) return;
+      if (--pending <= 0) { finished = true; done(); }
+    };
+    list.forEach(function (s) {
+      FG.resolve(s.img, function (url) { s.img = url || null; finish(); });
+    });
+    setTimeout(function () {
+      if (!finished) { finished = true; done(); }
+    }, 2500);
   }
+
+  resolveArt(start);
 }());

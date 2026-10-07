@@ -26,73 +26,73 @@
 
   var GAMES = [
     {
-      id: 'tigre', name: 'Tigre da Sorte', img: 'img/tigre.png',
+      id: 'tigre', item: 'firecracker', itemChar: '🧨', name: 'Tigre da Sorte', img: 'img/tigre.png',
       tag: 'hot', rtp: 96.8, vol: 'alta',
       chars: ['🐯', '🧧', '🪙', '🏮', '🥠', '🎴'],
       wild: '🌟', scatter: '💰', theme: ['#7f1d1d', '#f59e0b']
     },
     {
-      id: 'dragao', name: 'Dragão de Jade', img: 'img/dragao.png',
+      id: 'dragao', item: 'pearl', itemChar: '🔮', name: 'Dragão de Jade', img: 'img/dragao.png',
       tag: '', rtp: 97.2, vol: 'media',
       chars: ['🐲', '🔮', '💎', '🏮', '🀄', '🎋'],
       wild: '🌟', scatter: '💰', theme: ['#064e3b', '#22d3ee']
     },
     {
-      id: 'coelho', name: 'Coelho da Fortuna', img: 'img/coelho.png',
+      id: 'coelho', item: 'carrot', itemChar: '🥕', name: 'Coelho da Fortuna', img: 'img/coelho.png',
       tag: 'new', rtp: 96.1, vol: 'baixa',
       chars: ['🐰', '🥕', '🌕', '🧧', '🪙', '🎋'],
       wild: '🌟', scatter: '💰', theme: ['#831843', '#f9a8d4']
     },
     {
-      id: 'touro', name: 'Boi Dourado', img: 'img/touro.png',
+      id: 'touro', item: 'bell', itemChar: '🔔', name: 'Boi Dourado', img: 'img/touro.png',
       tag: 'hot', rtp: 95.9, vol: 'alta',
       chars: ['🐂', '🌾', '🪙', '🧧', '🔔', '🎍'],
       wild: '🌟', scatter: '💰', theme: ['#78350f', '#fbbf24']
     },
     {
-      id: 'panda', name: 'Panda Real', img: 'img/panda.png',
+      id: 'panda', item: 'bamboo', itemChar: '🎋', name: 'Panda Real', img: 'img/panda.png',
       tag: '', rtp: 96.4, vol: 'media',
       chars: ['🐼', '🎋', '🥟', '🪙', '🧧', '🏮'],
       wild: '🌟', scatter: '💰', theme: ['#1e293b', '#94a3b8']
     },
     {
-      id: 'roleta', name: 'Roleta Imperial', img: 'img/roleta.png',
+      id: 'roleta', item: 'chip', itemChar: '🎰', name: 'Roleta Imperial', img: 'img/roleta.png',
       tag: 'live', rtp: 97.3, vol: 'baixa',
       chars: ['🎡', '♠️', '♥️', '♦️', '♣️', '🪙'],
       wild: '🌟', scatter: '💰', theme: ['#450a0a', '#ef4444']
     },
     {
-      id: 'mina', name: 'Mina de Ouro', img: 'img/mina-de-ouro.png',
+      id: 'mina', item: 'diamond', itemChar: '💎', name: 'Mina de Ouro', img: 'img/mina-de-ouro.png',
       tag: 'new', rtp: 96.0, vol: 'alta',
       chars: ['⛏️', '💎', '🧨', '🔦', '🪙', '🪨'],
       wild: '🌟', scatter: '💰', theme: ['#422006', '#eab308']
     },
     {
-      id: 'aviator', name: 'Aviador Fortune', img: 'img/aviator.png',
+      id: 'aviator', item: 'compass', itemChar: '🧭', name: 'Aviador Fortune', img: 'img/aviator.png',
       tag: 'hot', rtp: 97.0, vol: 'alta',
       chars: ['✈️', '🪂', '🧭', '🎖️', '☁️', '⛽'],
       wild: '🌟', scatter: '💰', theme: ['#0c4a6e', '#38bdf8']
     },
     {
-      id: 'bingo', name: 'Bingo Imperial', img: 'img/bingo-imperial.png',
+      id: 'bingo', item: 'bingoball', itemChar: '🎱', name: 'Bingo Imperial', img: 'img/bingo-imperial.png',
       tag: 'live', rtp: 95.5, vol: 'media',
       chars: ['🎱', '🃏', '🎟️', '🔔', '🪙', '🧧'],
       wild: '🌟', scatter: '💰', theme: ['#3b0764', '#a855f7']
     },
     {
-      id: 'rato', name: 'Rato Milionário', img: 'img/rato.png',
+      id: 'rato', item: 'cheese', itemChar: '🧀', name: 'Rato Milionário', img: 'img/rato.png',
       tag: '', rtp: 96.3, vol: 'media',
       chars: ['🐭', '🧀', '🪙', '🧧', '🎐', '🏮'],
       wild: '🌟', scatter: '💰', theme: ['#334155', '#facc15']
     },
     {
-      id: 'espaco', name: 'Astro Multiplier', img: 'img/espaco.png',
+      id: 'espaco', item: 'planet', itemChar: '🪐', name: 'Astro Multiplier', img: 'img/espaco.png',
       tag: 'new', rtp: 97.1, vol: 'alta',
       chars: ['🚀', '🪐', '☄️', '🛸', '⭐', '🌙'],
       wild: '🌟', scatter: '💰', theme: ['#1e1b4b', '#818cf8']
     },
     {
-      id: 'futebol', name: 'Pênalti de Ouro', img: 'img/futebol.png',
+      id: 'futebol', item: 'trophy', itemChar: '🏆', name: 'Pênalti de Ouro', img: 'img/futebol.png',
       tag: 'live', rtp: 96.6, vol: 'media',
       chars: ['⚽', '🥅', '🧤', '🏆', '🎽', '🚩'],
       wild: '🌟', scatter: '💰', theme: ['#14532d', '#4ade80']
@@ -100,13 +100,13 @@
     /* Os dois últimos apontam de propósito para caminhos quebrados:
        provam o motor de resgate de imagens (fortune-enhance.js). */
     {
-      id: 'demo1', name: 'Fortune Tiger', img: 'images/fortune_tiger_icon.png',
+      id: 'demo1', item: 'firecracker', itemChar: '🧨', name: 'Fortune Tiger', img: 'images/fortune_tiger_icon.png',
       tag: '', rtp: 96.8, vol: 'alta',
       chars: ['🐯', '🧧', '🪙', '🏮', '🥠', '🎴'],
       wild: '🌟', scatter: '💰', theme: ['#7f1d1d', '#f59e0b']
     },
     {
-      id: 'demo2', name: 'Jogo Sem Arte', img: 'img/jogo-inexistente.png',
+      id: 'demo2', item: 'chip', itemChar: '🎰', name: 'Jogo Sem Arte', img: 'img/jogo-inexistente.png',
       tag: '', rtp: 95.0, vol: 'baixa',
       chars: ['🎰', '💎', '🔔', '🍒', '⭐', '🍋'],
       wild: '🌟', scatter: '💰', theme: ['#1b0b22', '#8b5cf6']
@@ -114,6 +114,28 @@
   ];
 
   var VOL_LABEL = { baixa: 'baixa', media: 'média', alta: 'alta' };
+
+  /* ------------------------------------------------------------------ *
+   * Baralho de símbolos. A escada é a mesma em todos os jogos (premium →
+   * saco → lingote → item do tema → moedas → lanterna), mas o PRIMEIRO é o
+   * bicho do jogo e o QUARTO é o item exclusivo daquele tema — é isso que
+   * faz cada máquina parecer diferente. Se um PNG ainda não existir, a sala
+   * de jogo sonda o caminho e cai no emoji sozinha.
+   * ------------------------------------------------------------------ */
+  var SYM = 'img/sym/';
+
+  GAMES.forEach(function (g) {
+    g.sym = [
+      { char: g.chars[0],   img: g.img },
+      { char: '💰',         img: SYM + 'bag.png' },
+      { char: '🪙',         img: SYM + 'ingot.png' },
+      { char: g.itemChar,   img: SYM + g.item + '.png' },
+      { char: '🧧',         img: SYM + 'coins.png' },
+      { char: '🏮',         img: SYM + 'lantern.png' }
+    ];
+    g.wildSym = { char: g.wild, img: SYM + 'wild.png' };
+    g.scatterSym = { char: g.scatter, img: SYM + 'scatter.png' };
+  });
 
   function byId(id) {
     for (var i = 0; i < GAMES.length; i++) if (GAMES[i].id === id) return GAMES[i];

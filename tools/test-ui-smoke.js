@@ -254,7 +254,7 @@ function run(file) {
   var aposta = saved.bet;
   ok(delta === -aposta || delta > -aposta,
     'saldo variou de forma coerente com a aposta (Δ = ' + delta.toFixed(2) + ', aposta ' + aposta + ')');
-  ok(/Ganhou|dessa vez|scatter/.test(registry.winbar.textContent),
+  ok(/GANHOU|dessa vez|scatter/i.test(registry.winbar.textContent),
     'resultado anunciado: "' + registry.winbar.textContent + '"');
 
   /* ---- 60 giros seguidos: procura exceção e estado inconsistente ---- */

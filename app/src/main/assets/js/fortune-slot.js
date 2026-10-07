@@ -96,12 +96,13 @@
     var preset = PRESETS[game.vol] || PRESETS.media;
     var cols = 3, rows = 3;
 
+    var art = game.sym || null;          // baralho com arte (fortune-games.js)
     var all = [];
     for (var i = 0; i < 6; i++) {
       all.push({
         id: 's' + i,
-        char: game.chars[i],
-        img: i === 0 ? game.img : null,
+        char: art ? art[i].char : game.chars[i],
+        img: art ? art[i].img : (i === 0 ? game.img : null),
         weight: preset.weights[i],
         ratio: preset.ratios[i],
         pay: 0
@@ -109,12 +110,16 @@
     }
     var wildIndex = all.length;
     all.push({
-      id: 'wild', char: game.wild, img: null,
+      id: 'wild',
+      char: game.wildSym ? game.wildSym.char : game.wild,
+      img: game.wildSym ? game.wildSym.img : null,
       weight: preset.wild.weight, ratio: preset.wild.ratio, pay: 0, isWild: true
     });
     var scatterIndex = all.length;
     all.push({
-      id: 'scatter', char: game.scatter, img: null,
+      id: 'scatter',
+      char: game.scatterSym ? game.scatterSym.char : game.scatter,
+      img: game.scatterSym ? game.scatterSym.img : null,
       weight: preset.scatter.weight, ratio: 0, pay: 0, isScatter: true
     });
 
