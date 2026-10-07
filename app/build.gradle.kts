@@ -54,8 +54,10 @@ android {
                 keyAlias = ksAlias
                 keyPassword = ksKeyPass
                 storeType = "PKCS12"
-                // v1 cobre Android 6; v2/v3 são as assinaturas que o sistema
-                // valida no Android 7+ e que o Play Protect espera encontrar.
+                // v2/v3 são as assinaturas que o Android 7+ valida e que o
+                // Play Protect espera encontrar. O v1 fica pedido aqui por
+                // segurança, mas com minSdk 24 o AGP o dispensa — e o APK
+                // publicado sai mesmo só com v2+v3, o que é o correto.
                 enableV1Signing = true
                 enableV2Signing = true
                 enableV3Signing = true

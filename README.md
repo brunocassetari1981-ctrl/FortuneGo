@@ -214,8 +214,8 @@ Abra esse link **no navegador do celular**, baixe o arquivo e toque nele.
 
 | | |
 |---|---|
-| Tamanho | ~19 MB |
-| Tipo | **release assinado** (chave estável, esquemas v1 + v2 + v3) |
+| Tamanho | ~15 MB |
+| Tipo | **release assinado** (chave estável, esquemas v2 + v3) |
 | Depurável | não (`debuggable=false`) |
 | Permissões | só 3: internet, estado da rede e vibração |
 | Conteúdo verificado | `index.html`, `game.html`, `css/`, `js/`, `img/manifest.json` e **45 imagens** |
@@ -233,7 +233,8 @@ Dá para separar dois avisos bem diferentes que o Android mostra:
 O que foi feito concretamente para isso:
 
 * **Assinatura de release com chave estável** (`keystore/fortunego.p12`, RSA 2048, válida até 2056),
-  nos esquemas v1, v2 e v3 — o CI quebra o build se o APK sair sem assinatura v2.
+  verificada pelo `apksigner` nos esquemas **v2 e v3** — o CI quebra o build se faltar a v2.
+  (O v1/JAR não é emitido: com `minSdk 24` o Android sempre valida pelo v2, e o AGP o dispensa.)
 * **`debuggable=false`** — o CI confere com `aapt2 dump badging` e falha se voltar.
 * **Permissões mínimas** — `INTERNET`, `ACCESS_NETWORK_STATE`, `VIBRATE`. Nada de SMS,
   contatos, localização ou instalação de pacotes, que são os pedidos que mais disparam heurística.
