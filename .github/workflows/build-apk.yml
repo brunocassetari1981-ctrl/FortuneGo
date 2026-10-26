@@ -22,6 +22,11 @@ jobs:
         run: npm ci
       - name: Build web
         run: npm run build
+      - name: Install Android SDK 36
+        run: |
+          yes | sdkmanager --licenses || true
+          sdkmanager --install "platforms;android-36" "build-tools;36.0.0" "platform-tools" || true
+          sdkmanager --list_installed | head -n 20 || true
       - name: Sync Capacitor
         run: |
           npx cap copy android
@@ -34,16 +39,6 @@ jobs:
           set -o pipefail
           chmod +x gradlew
           ./gradlew assembleDebug --stacktrace 2>&1 | tee /tmp/gradle.log
-      - name: Debug build failure
-        if: failure()
-        run: |
-          grep -n "What went\|FAILURE\|Could not" /tmp/gradle.log | head -n 20 > /tmp/grep.txt
-          cat /tmp/grep.txt
-          cat /tmp/grep.txt | tr '\n' '|' | cut -c1-1000 > /tmp/g.txt
-          echo "::error::GREP:$(cat /tmp/g.txt)"
-          awk '/FAILURE: Build failed/{p=1} p' /tmp/gradle.log | head -n 40 | tr '\n' '|' | cut -c1-1000 > /tmp/a.txt
-          echo "::notice::AROUND:$(cat /tmp/a.txt)"
-          ls -lh android/capacitor-cordova-android-plugins/ 2>&1 | head
       - uses: actions/upload-artifact@v4
         with:
           name: FortuneGo-debug-apk
