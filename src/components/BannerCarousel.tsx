@@ -18,10 +18,10 @@ export const BannerCarousel: React.FC<BannerCarouselProps> = ({ onClaimPromo }) 
 
   return (
     <div className="w-full lobby-container px-3 pt-3 space-y-3">
-      {/* Main hero banner — 121bet style: large rounded, gradient overlay, CTA */}
+      {/* Main hero banner — FortuneGo style: large rounded, gradient overlay, CTA */}
       <div className="relative overflow-hidden rounded-2xl border border-white/10 shadow-xl h-[148px] sm:h-[190px] bg-black">
         <div className={`absolute inset-0 bg-gradient-to-br ${banner.gradient} opacity-90`} />
-        {/* decorative circles like 121bet */}
+        {/* decorative circles like FortuneGo */}
         <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-white/10 blur-2xl" />
         <div className="absolute -left-6 -bottom-10 w-56 h-56 rounded-full bg-black/10 blur-2xl" />
 
@@ -66,7 +66,7 @@ export const BannerCarousel: React.FC<BannerCarouselProps> = ({ onClaimPromo }) 
         </div>
       </div>
 
-      {/* Quick promo row — 4 tiles like 121bet fast entry */}
+      {/* Quick promo row — 4 tiles like FortuneGo fast entry */}
       <div className="grid grid-cols-4 gap-2">
         {QUICK_PROMOS.map(p => (
           <button key={p.id} onClick={() => onClaimPromo?.(p.id)} className={`relative overflow-hidden rounded-2xl p-2 sm:p-3 border border-white/10 shadow-md active:scale-95 transition-all cursor-pointer bg-gradient-to-br ${p.color} flex flex-col items-center justify-center gap-1 text-center group`}>

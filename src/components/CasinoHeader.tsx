@@ -40,7 +40,7 @@ export const CasinoHeader: React.FC<CasinoHeaderProps> = ({
 
   return (
     <header className="sticky top-0 z-40 w-full shadow-xl border-b border-[#1a5c3a]/60" style={{ background: 'linear-gradient(180deg, #194C38 0%, #164633 50%, #113829 100%)' }}>
-      {/* Top green app bar — 121bet identity */}
+      {/* Top green app bar — FortuneGo identity */}
       <div className="lobby-container px-3 py-2 flex items-center justify-between gap-2">
         {/* Left: Logo + Lv */}
         <div className="flex items-center gap-2 shrink-0">
@@ -52,7 +52,7 @@ export const CasinoHeader: React.FC<CasinoHeaderProps> = ({
               <span className="font-fredoka text-[18px] font-extrabold tracking-tight text-white drop-shadow">
                 Fortune<span className="bg-gradient-to-r from-amber-300 to-yellow-200 bg-clip-text text-transparent">Go</span>
               </span>
-              <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-amber-400 text-[#164633] tracking-widest">121BET</span>
+              <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-amber-400 text-[#164633] tracking-widest">OFICIAL</span>
             </div>
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="text-[10px] font-bold text-amber-200">Lv.{level}</span>
@@ -69,7 +69,7 @@ export const CasinoHeader: React.FC<CasinoHeaderProps> = ({
           </div>
         </div>
 
-        {/* Center: Currency Hub — compact pills like 121bet */}
+        {/* Center: Currency Hub — compact pills like FortuneGo */}
         <div className="flex items-center gap-1.5 flex-1 justify-center max-w-[520px]">
           {/* Rolls */}
           <div className="flex items-center gap-1 bg-black/25 backdrop-blur px-2 py-1 rounded-full border border-white/10">
@@ -127,7 +127,7 @@ export const CasinoHeader: React.FC<CasinoHeaderProps> = ({
           <button onClick={onToggleSound} className={`hidden sm:flex p-2 rounded-full border active:scale-95 cursor-pointer ${soundEnabled ? 'bg-white/10 text-white border-white/10' : 'bg-red-500/20 text-red-200 border-red-400/30'}`}>
             {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
           </button>
-          {/* Deposit CTA — big amber like 121bet */}
+          {/* Deposit CTA — big amber like FortuneGo */}
           <button onClick={() => { sound.playCoin(); onDeposit(); }} className="ml-1 px-3 sm:px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 hover:to-yellow-400 text-[#164633] font-black text-xs sm:text-sm shadow-lg shadow-amber-500/20 border border-yellow-200 active:scale-95 flex items-center gap-1 cursor-pointer">
             <span className="hidden sm:inline">💳</span> Depósito
           </button>

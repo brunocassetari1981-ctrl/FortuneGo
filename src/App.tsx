@@ -471,7 +471,7 @@ export default function App() {
 
             <CategoryTabs active={activeCategory} onSelect={setActiveCategory} />
 
-            {/* Live jackpot ticker + wins strip like 121bet */}
+            {/* Live jackpot ticker + wins strip like FortuneGo */}
             <div className="lobby-container px-3 mt-3">
               <div className="rounded-2xl border border-amber-400/20 bg-gradient-to-r from-amber-500/15 via-yellow-500/10 to-amber-500/15 p-2.5 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5">
@@ -486,7 +486,7 @@ export default function App() {
                 </button>
               </div>
 
-              {/* Winner ticker — mimics 121bet winnerInFooterTop */}
+              {/* Winner ticker — mimics FortuneGo winnerInFooterTop */}
               <div className="mt-2 rounded-full bg-black/40 border border-white/5 px-3 py-1.5 overflow-hidden flex items-center gap-3">
                 <span className="shrink-0 text-[10px] font-black px-2 py-1 rounded-full bg-emerald-500 text-white">AO VIVO</span>
                 <div className="flex-1 overflow-hidden relative h-4 text-xs">
@@ -548,9 +548,9 @@ export default function App() {
                   </div>
                 </div>
               </div>
-              {/* Footer info like 121bet */}
+              {/* Footer info like FortuneGo */}
               <div className="mt-4 rounded-2xl bg-black/30 border border-white/5 p-3 text-center">
-                <p className="text-[10px] font-bold tracking-widest uppercase text-white/40">Licenciado • Jogo Responsável • 18+ • FortuneGo 121BET Edition</p>
+                <p className="text-[10px] font-bold tracking-widest uppercase text-white/40">Licenciado • Jogo Responsável • 18+ • FortuneGo Oficial</p>
                 <p className="text-[10px] text-white/30 mt-1">Este é um jogo demonstrativo com moeda fictícia. Sem valor monetário real.</p>
               </div>
             </div>
@@ -643,7 +643,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Deposit modal — mimic 121bet deposito */}
+      {/* Deposit modal — mimic FortuneGo deposito */}
       {showDeposit && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-gradient-to-b from-white to-slate-50 rounded-3xl max-w-md w-full p-5 shadow-2xl relative text-slate-900 max-h-[90vh] overflow-y-auto">

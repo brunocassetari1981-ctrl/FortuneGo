@@ -13,7 +13,7 @@ interface GameGridProps {
 export const GameGrid: React.FC<GameGridProps> = ({ category, onPlay, onToggleFav, favSet }) => {
   const games = getGamesByCategory(category);
 
-  // 121bet shows section headline with icon + Tudo button
+  // FortuneGo shows section headline with icon + Tudo button
   const categoryLabel = category === 'Popular' ? 'Popular' : category;
 
   return (
@@ -30,7 +30,7 @@ export const GameGrid: React.FC<GameGridProps> = ({ category, onPlay, onToggleFa
         </button>
       </div>
 
-      {/* Grid — matches 121bet list-slide: 3 cols on mobile, 3x? then horizontal scroll on desktop could wrap */}
+      {/* Grid — matches FortuneGo list-slide: 3 cols on mobile, 3x? then horizontal scroll on desktop could wrap */}
       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
         {games.map(game => (
           <div
@@ -38,7 +38,7 @@ export const GameGrid: React.FC<GameGridProps> = ({ category, onPlay, onToggleFa
             className="group relative rounded-2xl bg-[#132e23] border border-white/10 overflow-hidden shadow-md hover:shadow-xl hover:border-amber-400/30 hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col"
             onClick={() => onPlay(game)}
           >
-            {/* Favorite star — top right like 121bet */}
+            {/* Favorite star — top right like FortuneGo */}
             <button
               onClick={e => { e.stopPropagation(); onToggleFav?.(game.id); }}
               className={`absolute top-1.5 right-1.5 z-10 w-6 h-6 rounded-full backdrop-blur flex items-center justify-center border cursor-pointer transition-all ${favSet?.has(game.id) ? 'bg-amber-400 border-amber-300 text-white' : 'bg-black/40 border-white/15 text-white/80 hover:bg-black/60'}`}
@@ -85,7 +85,7 @@ export const GameGrid: React.FC<GameGridProps> = ({ category, onPlay, onToggleFa
         ))}
       </div>
 
-      {/* Promo CTA after grid — like 121bet extra banner */}
+      {/* Promo CTA after grid — like FortuneGo extra banner */}
       <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="rounded-2xl p-3 flex items-center gap-3 border border-amber-400/20 bg-gradient-to-br from-amber-500/15 via-yellow-500/10 to-orange-500/15">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center text-white text-xl">🎲</div>

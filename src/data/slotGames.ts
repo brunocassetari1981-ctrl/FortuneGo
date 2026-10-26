@@ -1,6 +1,6 @@
 import { SlotGameDef } from '../types/game';
 
-// PG Soft Fortune Series + top 121bet games — thumbnails from CDN (same as 121bet MHT)
+// PG Soft Fortune Series + top FortuneGo games — thumbnails from CDN (same as FortuneGo MHT)
 export const SLOT_GAMES: SlotGameDef[] = [
   {
     id: 'fortune-tiger',
@@ -404,7 +404,7 @@ export const SLOT_GAMES: SlotGameDef[] = [
   },
 ];
 
-// Banner carousel images (from 121bet CDN)
+// Banner carousel images (from FortuneGo CDN)
 export const BANNERS = [
   { id: 'b1', img: 'https://o7teb121.121bet7.vip/siteadmin/upload/img/1897206986956238849.avif', title: 'Fortune Tiger Mega Jackpot', subtitle: 'Ganhe até 2500x com o Tigre!', cta: 'JOGAR AGORA', gradient: 'from-orange-600 to-amber-500' },
   { id: 'b2', img: 'https://o7teb121.121bet7.vip/common/upload/2061256407543259137.avif', title: 'Bônus de Boas-Vindas', subtitle: '100% até R$ 5000 no 1º depósito', cta: 'RESGATAR', gradient: 'from-emerald-600 to-teal-500' },
@@ -412,7 +412,7 @@ export const BANNERS = [
   { id: 'b4', img: 'https://o7teb121.121bet7.vip/common/upload/2099407243396722689.avif', title: 'Torneio Fortune', subtitle: 'R$ 1.000.000 em prêmios semanais', cta: 'PARTICIPAR', gradient: 'from-rose-600 to-red-600' },
 ];
 
-// Promo quick-access tiles (small icons row like 121bet)
+// Promo quick-access tiles (small icons row like FortuneGo)
 export const QUICK_PROMOS = [
   { id: 'q1', label: 'Bônus Diário', icon: '🎁', color: 'from-amber-500 to-orange-500', img: 'https://o7teb121.121bet7.vip/active/ActiveImg7310281667030225.avif' },
   { id: 'q2', label: 'Roleta Prêmios', icon: '🎰', color: 'from-pink-500 to-rose-500', img: 'https://o7teb121.121bet7.vip/common/upload/1941166023737102337.avif' },
@@ -420,7 +420,7 @@ export const QUICK_PROMOS = [
   { id: 'q4', label: 'Indique & Ganhe', icon: '👥', color: 'from-cyan-500 to-blue-500', img: 'https://o7teb121.121bet7.vip/active/ActiveImg7308940191209876.avif' },
 ];
 
-// Category tabs — icons from 121bet sprite CDN (identical URLs)
+// Category tabs — icons from FortuneGo sprite CDN (identical URLs)
 export const CATEGORIES = [
   { id: 'Popular', label: 'Popular', icon: 'https://d13on7novkmyxh.cloudfront.net/siteadmin/skin/lobby_asset_dark/2-1-common/common/_sprite/icon_dtfl_rm_1.avif?manualVersion=1&version=v7.5.88', count: 0 },
   { id: 'Slots', label: 'Slots', icon: 'https://d13on7novkmyxh.cloudfront.net/siteadmin/skin/lobby_asset_dark/2-1-common/common/_sprite/icon_dtfl_dz_1.avif?manualVersion=1&version=v7.5.88', count: 0 },

@@ -39,7 +39,7 @@ export const CategoryTabs: React.FC<CategoryTabsProps> = ({ active, onSelect }) 
               </button>
             );
           })}
-          {/* Extra tabs like 121bet has */}
+          {/* Extra tabs like FortuneGo has */}
           {['Recente', 'Favoritos'].map(extra => {
             const isActive = active === extra;
             return (

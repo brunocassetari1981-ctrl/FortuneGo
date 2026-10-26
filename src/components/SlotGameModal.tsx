@@ -264,7 +264,7 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
             </div>
           </div>
 
-          {/* Big spin button — 121bet style center circular */}
+          {/* Big spin button — FortuneGo style center circular */}
           <div className="flex items-center justify-center gap-3">
             <div className="w-10 h-10 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-white/60">
               {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}

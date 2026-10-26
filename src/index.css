@@ -37,7 +37,7 @@
   font-family: 'Fredoka', cursive, sans-serif;
 }
 
-/* 121bet-inspired animations */
+/* FortuneGo-inspired animations */
 @keyframes pulse-glow {
   0%, 100% {
     box-shadow: 0 0 15px rgba(245, 158, 11, 0.4), inset 0 0 10px rgba(245, 158, 11, 0.2);
@@ -110,7 +110,7 @@
 }
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 
-/* Lobby max width like 121bet mobile */
+/* Lobby max width like FortuneGo mobile */
 .lobby-container {
   max-width: 540px;
   margin: 0 auto;
