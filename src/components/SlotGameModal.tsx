@@ -41,8 +41,9 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
   const isRabbit2 = game?.id === 'fortune-rabbit-2';
   const isFortuneSeries = game?.category.includes('Fortune') || game?.id.startsWith('fortune-');
 
-  // Jackpot values para Rabbit2 (WG) — como no vídeo roxo
-  const jackpotVals = isRabbit2 ? { grand: 12394641, major: 940670, minor: 2, mini: 1 } : null;
+  // Jackpot para Fortune series (como no vídeo final roxo)
+  const isJackpotGame = isFortuneSeries || isRabbit2;
+  const jackpotVals = isJackpotGame ? { grand: 12394641, major: 940670, minor: 2, mini: 1 } : null;
 
   // header subtitle por jogo
   const headerSubtitle = isPinata ? 'PINATA WINS • RTP 96.8% • 9 GRÁTIS' : `${game?.name.toUpperCase()} • RTP ${game?.rtp.toFixed(1)}% • ${game?.volatility}`;
