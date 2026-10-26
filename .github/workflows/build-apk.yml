@@ -18,25 +18,24 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '21'
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
       - name: Install deps
         run: npm ci
       - name: Build web
         run: npm run build
       - name: Debug Capacitor
         run: |
-          ls -la
           ls -la dist/ || echo "no dist"
           cat capacitor.config.json
-          ls -la android/ || echo "no android"
           npx cap doctor || true
       - name: Sync Capacitor
-        run: |
-          set -x
-          npx cap sync android 2>&1 | tee /tmp/cap-sync.log || (cat /tmp/cap-sync.log; echo "::error::cap sync failed"; cat /tmp/cap-sync.log; exit 1)
-          cat /tmp/cap-sync.log
+        run: npx cap sync android
       - name: Build APK debug
         working-directory: android
-        run: chmod +x gradlew && ./gradlew assembleDebug --stacktrace
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --stacktrace --info | tee /tmp/gradle.log || (cat /tmp/gradle.log; exit 1)
       - uses: actions/upload-artifact@v4
         with:
           name: FortuneGo-debug-apk
