@@ -52,7 +52,7 @@ export const CasinoHeader: React.FC<CasinoHeaderProps> = ({
               <span className="font-fredoka text-[18px] font-extrabold tracking-tight text-white drop-shadow">
                 Fortune<span className="bg-gradient-to-r from-amber-300 to-yellow-200 bg-clip-text text-transparent">Go</span>
               </span>
-              <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-amber-400 text-[#164633] tracking-widest">OFICIAL</span>
+              <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-amber-400 text-[#164633] tracking-widest">FortuneGo</span>
             </div>
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="text-[10px] font-bold text-amber-200">Lv.{level}</span>
