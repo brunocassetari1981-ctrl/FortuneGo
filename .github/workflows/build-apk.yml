@@ -26,21 +26,26 @@ jobs:
         run: |
           npx cap copy android || true
           mkdir -p android/app/src/main/assets/public
-          cp -R dist/* android/app/src/main/assets/public/ 2>&1 | head
+          cp -R dist/* android/app/src/main/assets/public/
           ls -lh android/app/src/main/assets/public/ | head
       - name: Build APK debug
         working-directory: android
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug --stacktrace 2>&1 | tee /tmp/gradle.log
-      - name: List outputs
+          echo "=== BUILD DONE ==="
+          ls -lh app/build/outputs/apk/debug/ 2>&1 | head -n 20
+          find app/build -type f 2>&1 | head -n 50
+      - name: Debug outputs
         run: |
-          find android -type f -name "*.apk" 2>&1 | head -n 20
-          ls -R android/app/build/outputs 2>&1 | head -n 100
+          pwd
+          ls -R android/app/build/outputs 2>&1 | head -n 200
+          echo "--- find apk ---"
+          find . -name "*.apk" -type f 2>&1 | head -n 20
+          ls -lh android/app/build/outputs/apk/debug/ 2>&1 || echo "no debug dir"
+          cat /tmp/gradle.log | tail -n 100 || echo "no log"
       - uses: actions/upload-artifact@v4
         with:
           name: FortuneGo-debug-apk
-          path: |
-            android/app/build/outputs/apk/**/*.apk
-            android/**/*.apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
