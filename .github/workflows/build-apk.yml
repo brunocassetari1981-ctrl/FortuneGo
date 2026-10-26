@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
       - uses: actions/setup-java@v5
         with:
@@ -24,28 +24,11 @@ jobs:
         run: npm run build
       - name: Sync Capacitor
         run: |
-          set +e
-          echo "=== cap copy ==="
-          npx cap copy android 2>&1 | tee /tmp/copy.log
-          COPY_EXIT=${PIPESTATUS[0]}
-          echo "copy exit $COPY_EXIT"
-          cat /tmp/copy.log | head -n 40
-          echo "::notice::COPY_EXIT:$COPY_EXIT"
-          echo "::notice::COPY_LOG:$(cat /tmp/copy.log | tr '\n' '|' | cut -c1-900)"
-          if [ $COPY_EXIT -ne 0 ]; then
-            echo "copy failed, doing manual fallback"
-            mkdir -p android/app/src/main/assets/public
-            cp -R dist/* android/app/src/main/assets/public/
-          fi
-          echo "=== cap update ==="
-          npx cap update android 2>&1 | tee /tmp/update.log || echo "update exit $?"
-          cat /tmp/update.log | head -n 60
-          echo "::notice::UPDATE_LOG:$(cat /tmp/update.log | tr '\n' '|' | cut -c1-900)"
-          ls -lh android/capacitor-cordova-android-plugins/ 2>&1 | head
-          # ensure copy even if update failed
+          npx cap copy android
+          npx cap update android || true
           mkdir -p android/app/src/main/assets/public
-          cp -R dist/* android/app/src/main/assets/public/ || true
-          cat /tmp/copy.log | grep -i error | head
+          cp -R dist/* android/app/src/main/assets/public/
+          ls -lh android/capacitor-cordova-android-plugins/ 2>&1 | head
       - name: Build APK debug
         working-directory: android
         run: |
