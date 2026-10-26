@@ -18,15 +18,12 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '21'
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
       - name: Install deps
         run: npm ci
       - name: Build web
         run: npm run build
       - name: Debug Capacitor
         run: |
-          ls -la dist/ || echo "no dist"
           cat capacitor.config.json
           npx cap doctor || true
       - name: Sync Capacitor
@@ -35,7 +32,7 @@ jobs:
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace --info | tee /tmp/gradle.log || (cat /tmp/gradle.log; exit 1)
+          ./gradlew assembleDebug --stacktrace
       - uses: actions/upload-artifact@v4
         with:
           name: FortuneGo-debug-apk
