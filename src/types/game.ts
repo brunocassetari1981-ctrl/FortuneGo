@@ -73,3 +73,44 @@ export interface GameState {
   missions: Mission[];
   unlockedPawns: string[];
 }
+
+// Slot System Types
+export interface SlotSymbol {
+  id: string;
+  emoji: string;
+  name: string;
+  payout: { 3: number; 5?: number };
+  isWild?: boolean;
+  isScatter?: boolean;
+  color: string;
+}
+
+export interface SlotGameDef {
+  id: string;
+  name: string;
+  provider: string;
+  thumb: string;
+  banner: string;
+  primaryColor: string;
+  secondaryColor: string;
+  bgGradient: string;
+  reels: number;
+  rows: number;
+  paylines: number;
+  symbols: SlotSymbol[];
+  freeSpinsTrigger?: string;
+  description: string;
+  rtp: number;
+  volatility: 'Baixa' | 'Média' | 'Alta';
+  category: string[];
+  hot?: boolean;
+  new?: boolean;
+}
+
+export interface SpinResult {
+  grid: string[][];
+  winLines: { line: number[]; symbolId: string; count: number; payout: number }[];
+  totalWin: number;
+  isBigWin: boolean;
+  isFreeSpin: boolean;
+}
