@@ -24,36 +24,19 @@ jobs:
         run: npm run build
       - name: Sync Capacitor
         run: |
-          npx cap copy android || true
+          npx cap copy android
+          npx cap update android || echo "update failed but continue"
           mkdir -p android/app/src/main/assets/public
           cp -R dist/* android/app/src/main/assets/public/
+          ls -lh android/capacitor-cordova-android-plugins/ 2>&1 | head
       - name: Build APK debug
         working-directory: android
         run: |
           set -o pipefail
           chmod +x gradlew
           ./gradlew assembleDebug --stacktrace 2>&1 | tee /tmp/gradle.log
-      - name: Debug failure
-        if: failure()
-        run: |
-          echo "=== GREP WHAT WENT WRONG ==="
-          grep -n "What went\|FAILURE\|error:\|error\|Exception" /tmp/gradle.log | head -n 20 > /tmp/grep.txt
-          cat /tmp/grep.txt
-          cat /tmp/grep.txt | tr '\n' '|' | cut -c1-900 > /tmp/g.txt
-          echo "::error::GREPTAIL:$(cat /tmp/g.txt)"
-          # also get 10 lines around failure
-          grep -n "FAILURE\|What went" /tmp/gradle.log | head -n 5 | cut -d: -f1 > /tmp/linenos.txt
-          echo "::notice::LINES:$(cat /tmp/linenos.txt | tr '\n' ',')"
-          # get 30 lines after FAILURE
-          awk '/FAILURE: Build failed/{p=1} p{print NR": "$0} ' /tmp/gradle.log | head -n 40 > /tmp/around.txt
-          cat /tmp/around.txt
-          cat /tmp/around.txt | tr '\n' '|' | cut -c1-1000 > /tmp/a.txt
-          echo "::notice::AROUND:$(cat /tmp/a.txt)"
-          # also first error line
-          grep -m1 -A5 "error:" /tmp/gradle.log | tr '\n' '|' | cut -c1-900 > /tmp/e.txt
-          echo "::notice::ERR1:$(cat /tmp/e.txt)"
       - uses: actions/upload-artifact@v4
         with:
           name: FortuneGo-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: warn
+          if-no-files-found: error
