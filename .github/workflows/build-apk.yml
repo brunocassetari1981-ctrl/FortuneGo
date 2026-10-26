@@ -22,14 +22,18 @@ jobs:
         run: npm ci
       - name: Build web
         run: npm run build
-      - name: Debug Capacitor config
+      - name: Debug Capacitor
         run: |
           ls -la
           ls -la dist/ || echo "no dist"
-          cat capacitor.config.json || cat capacitor.config.ts || echo "no config"
-          npx cap config || true
+          cat capacitor.config.json
+          ls -la android/ || echo "no android"
+          npx cap doctor || true
       - name: Sync Capacitor
-        run: npx cap sync android
+        run: |
+          set -x
+          npx cap sync android 2>&1 | tee /tmp/cap-sync.log || (cat /tmp/cap-sync.log; echo "::error::cap sync failed"; cat /tmp/cap-sync.log; exit 1)
+          cat /tmp/cap-sync.log
       - name: Build APK debug
         working-directory: android
         run: chmod +x gradlew && ./gradlew assembleDebug --stacktrace
