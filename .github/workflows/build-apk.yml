@@ -22,31 +22,20 @@ jobs:
         run: npm ci
       - name: Build web
         run: npm run build
-      - name: Debug Capacitor
+      - name: Sync Capacitor (copy only)
         run: |
           set +e
-          echo "=== capacitor configs ==="
-          ls -la capacitor.config.* || echo "no config"
-          cat capacitor.config.json || echo "no json"
-          echo "=== dist ==="
-          ls -lh dist/ || echo "no dist"
-          echo "=== android ==="
-          ls -la android/ | head -n 20 || echo "no android"
-          npx cap --version || true
-          npx cap doctor || true
-          echo "debug done"
-      - name: Sync Capacitor
-        run: |
-          set -o pipefail
-          npx cap sync android 2>&1 | tee /tmp/cap-sync.log
-          exit ${PIPESTATUS[0]}
-      - name: Upload sync log always
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: cap-sync-log-${{ github.run_number }}
-          path: /tmp/cap-sync.log
-          if-no-files-found: warn
+          echo "=== trying cap copy ==="
+          npx cap copy android 2>&1 | tee /tmp/cap.log
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then
+            echo "cap copy failed, trying manual copy"
+            mkdir -p android/app/src/main/assets/public
+            cp -R dist/* android/app/src/main/assets/public/ || true
+            cp capacitor.config.json android/app/src/main/assets/ || true
+            ls -lh android/app/src/main/assets/public/ | head
+          fi
+          cat /tmp/cap.log || true
+          ls -lh android/app/src/main/assets/public/ | head -n 5
       - name: Build APK debug
         working-directory: android
         run: |
