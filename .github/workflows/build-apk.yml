@@ -24,32 +24,27 @@ jobs:
         run: npm run build
       - name: Debug Capacitor
         run: |
+          set +e
           echo "=== capacitor configs ==="
           ls -la capacitor.config.* || echo "no config"
           cat capacitor.config.json || echo "no json"
           echo "=== dist ==="
-          ls -lh dist/
+          ls -lh dist/ || echo "no dist"
           echo "=== android ==="
-          ls -la android/ | head -n 20
-          npx cap --version
+          ls -la android/ | head -n 20 || echo "no android"
+          npx cap --version || true
           npx cap doctor || true
+          echo "debug done"
       - name: Sync Capacitor
         run: |
           set -o pipefail
           npx cap sync android 2>&1 | tee /tmp/cap-sync.log
-          echo "--- sync log end ---"
-          ls -lh android/app/src/main/assets/public/ || echo "no public"
+          cat /tmp/cap-sync.log
       - name: Build APK debug
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace 2>&1 | tee /tmp/gradle.log || (cat /tmp/gradle.log; exit 1)
-      - name: Upload sync log on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: cap-sync-log
-          path: /tmp/cap-sync.log
+          ./gradlew assembleDebug --stacktrace
       - uses: actions/upload-artifact@v4
         with:
           name: FortuneGo-debug-apk
