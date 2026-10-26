@@ -39,7 +39,14 @@ jobs:
         run: |
           set -o pipefail
           npx cap sync android 2>&1 | tee /tmp/cap-sync.log
-          cat /tmp/cap-sync.log
+          exit ${PIPESTATUS[0]}
+      - name: Upload sync log always
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cap-sync-log-${{ github.run_number }}
+          path: /tmp/cap-sync.log
+          if-no-files-found: warn
       - name: Build APK debug
         working-directory: android
         run: |
