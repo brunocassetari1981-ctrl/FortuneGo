@@ -14,7 +14,7 @@ jobs:
         with:
           node-version: 20
           cache: 'npm'
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '21'
@@ -22,12 +22,19 @@ jobs:
         run: npm ci
       - name: Build web
         run: npm run build
+      - name: Debug Capacitor config
+        run: |
+          ls -la
+          ls -la dist/ || echo "no dist"
+          cat capacitor.config.json || cat capacitor.config.ts || echo "no config"
+          npx cap config || true
       - name: Sync Capacitor
         run: npx cap sync android
       - name: Build APK debug
         working-directory: android
-        run: ./gradlew assembleDebug
+        run: chmod +x gradlew && ./gradlew assembleDebug --stacktrace
       - uses: actions/upload-artifact@v4
         with:
           name: FortuneGo-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
