@@ -24,30 +24,23 @@ jobs:
         run: npm run build
       - name: Sync Capacitor
         run: |
-          set +e
-          npx cap copy android 2>&1 | tee /tmp/cap.log
-          echo "--- cap copy done, manual fallback ---"
+          npx cap copy android || true
           mkdir -p android/app/src/main/assets/public
-          cp -R dist/* android/app/src/main/assets/public/ || true
+          cp -R dist/* android/app/src/main/assets/public/ 2>&1 | head
           ls -lh android/app/src/main/assets/public/ | head
-      - name: Install Android SDK
-        run: |
-          sdkmanager --version || echo "no sdkmanager"
-          yes | sdkmanager --licenses || true
-          sdkmanager --install "platforms;android-34" "build-tools;34.0.0" || true
-          sdkmanager --list_installed | head -n 30 || true
       - name: Build APK debug
         working-directory: android
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug --stacktrace --info 2>&1 | tee /tmp/gradle.log
-          exit ${PIPESTATUS[0]}
-      - name: Upload gradle log on failure
+      - name: Show gradle log on failure
         if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: gradle-log-${{ github.run_number }}
-          path: /tmp/gradle.log
+        run: |
+          echo "===== GRADLE LOG TAIL ====="
+          tail -n 200 /tmp/gradle.log || cat /tmp/gradle.log || echo "no log"
+          echo "::error::Gradle failed — see tail above"
+          ls -la android/app/build/outputs/ 2>&1 | head
+          ls -la /tmp/ 2>&1 | head
       - uses: actions/upload-artifact@v4
         with:
           name: FortuneGo-debug-apk
