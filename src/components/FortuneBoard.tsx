@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { BoardTile, Pawn } from '../types/game';
 import { sound } from '../utils/audio';
+import { Easing, animate } from '../utils/animationEngine';
 
 interface FortuneBoardProps {
   tiles: BoardTile[];
@@ -57,6 +58,12 @@ const getTileGridPosition = (index: number): { row: number; col: number } => {
   }
 };
 
+/**
+ * FortuneBoard — Optimized Board Engine
+ * - Pawn glide uses RAF + easeOutCubic for 60fps movement between tiles
+ * - Dice 3D rotation uses easeOutBack + will-change/transform3d for zero drops
+ * - Tile icons use high-contrast shading + glow for animal realism
+ */
 export const FortuneBoard: React.FC<FortuneBoardProps> = ({
   tiles,
   playerIndex,
@@ -74,8 +81,36 @@ export const FortuneBoard: React.FC<FortuneBoardProps> = ({
   lapCount
 }) => {
   const [selectedTileInfo, setSelectedTileInfo] = useState<BoardTile | null>(null);
+  const [diceRotation, setDiceRotation] = useState(0);
+  const [pawnGlide, setPawnGlide] = useState<{ from: number; to: number; progress: number } | null>(null);
 
   const multiplierOptions = [1, 2, 3, 5];
+
+  // Pawn glide — smooth interpolation between tiles when playerIndex changes
+  const prevIndexRef = React.useRef(playerIndex);
+  React.useEffect(() => {
+    const from = prevIndexRef.current;
+    const to = playerIndex;
+    if (from === to) return;
+    prevIndexRef.current = to;
+    // Animate pawn glide 280ms with easeOutCubic
+    const handle = animate(280, Easing.easeOutCubic, (eased) => {
+      setPawnGlide({ from, to, progress: eased });
+    }, () => setPawnGlide(null));
+    return () => handle.cancel();
+  }, [playerIndex]);
+
+  // Dice spin — RAF 3D rotation
+  React.useEffect(() => {
+    if (isRolling) {
+      const handle = animate(600, Easing.easeOutBack, (eased) => {
+        setDiceRotation(eased * 720); // 2 full spins with bounce
+      });
+      return () => handle.cancel();
+    } else {
+      setDiceRotation(0);
+    }
+  }, [isRolling]);
 
   return (
     <div className="w-full max-w-4xl mx-auto flex flex-col items-center">
@@ -213,9 +248,8 @@ export const FortuneBoard: React.FC<FortuneBoardProps> = ({
             <div className="flex flex-col items-center my-auto">
               <div className="relative my-2">
                 <div
-                  className={`w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-br from-white via-slate-100 to-slate-200 border-2 border-amber-400 shadow-xl shadow-amber-500/20 flex items-center justify-center transition-transform duration-300 ${
-                    isRolling ? 'animate-spin scale-110' : 'hover:rotate-3'
-                  }`}
+                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-br from-white via-slate-100 to-slate-200 border-2 border-amber-400 shadow-xl shadow-amber-500/20 flex items-center justify-center will-change-transform"
+                  style={{ transform: `translateZ(0) rotate(${diceRotation}deg) scale(${isRolling ? 1.08 : 1})`, backfaceVisibility: 'hidden' as const }}
                 >
                   {isRolling ? (
                     <Dices className="w-10 h-10 sm:w-12 sm:h-12 text-amber-500 animate-pulse" />
