@@ -30,26 +30,23 @@ jobs:
       - name: Build APK debug
         working-directory: android
         run: |
+          set -o pipefail
           chmod +x gradlew
           ./gradlew assembleDebug --stacktrace 2>&1 | tee /tmp/gradle.log
-          echo "=== outputs inside android ==="
-          ls -R app/build/outputs 2>&1 | head -n 50
-          find app/build -type f 2>&1 | head -n 50
-      - name: Debug outputs
+          echo "gradle exit $?"
+      - name: Debug failure
+        if: failure()
         run: |
-          echo "=== workspace root find ==="
-          find . -maxdepth 4 -name "*.apk" 2>&1 | tee /tmp/apks.txt
-          cat /tmp/apks.txt
-          ls -R android/app/build 2>&1 | head -n 100 | tee /tmp/ls.txt
-          # annotate so we can read via API without fetching logs
-          echo "::notice::APK_LIST:$(cat /tmp/apks.txt | tr '\n' ';')"
-          echo "::notice::LS_OUTPUT:$(cat /tmp/ls.txt | head -n 20 | tr '\n' ';')"
-          echo "::notice::GRADLE_TAIL:$(tail -n 20 /tmp/gradle.log | tr '\n' ';')"
+          echo "::error::GRADLE_FAILED"
+          tail -n 150 /tmp/gradle.log | tr '\n' ' ' | cut -c1-1000 | xargs -I{} echo "::notice::GRADLE_TAIL:{}"
+          cat /tmp/gradle.log | tail -n 200 > /tmp/tail.txt
+          # split into chunks for annotation (max 1024 chars)
+          head -n 100 /tmp/tail.txt | tr '\n' '|' | cut -c1-900 > /tmp/c1.txt
+          echo "::notice::GRADLE1:$(cat /tmp/c1.txt)"
+          tail -n 100 /tmp/tail.txt | head -n 80 | tr '\n' '|' | cut -c1-900 > /tmp/c2.txt
+          echo "::notice::GRADLE2:$(cat /tmp/c2.txt)"
       - uses: actions/upload-artifact@v4
         with:
           name: FortuneGo-debug-apk
-          path: |
-            android/app/build/outputs/apk/debug/*.apk
-            android/app/build/outputs/**/*.apk
-            **/*.apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: warn
