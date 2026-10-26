@@ -32,17 +32,15 @@ jobs:
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace --info 2>&1 | tee /tmp/gradle.log
-      - name: Show gradle log on failure
-        if: failure()
+          ./gradlew assembleDebug --stacktrace 2>&1 | tee /tmp/gradle.log
+      - name: List outputs
         run: |
-          echo "===== GRADLE LOG TAIL ====="
-          tail -n 200 /tmp/gradle.log || cat /tmp/gradle.log || echo "no log"
-          echo "::error::Gradle failed — see tail above"
-          ls -la android/app/build/outputs/ 2>&1 | head
-          ls -la /tmp/ 2>&1 | head
+          find android -type f -name "*.apk" 2>&1 | head -n 20
+          ls -R android/app/build/outputs 2>&1 | head -n 100
       - uses: actions/upload-artifact@v4
         with:
           name: FortuneGo-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: warn
+          path: |
+            android/app/build/outputs/apk/**/*.apk
+            android/**/*.apk
+          if-no-files-found: error
