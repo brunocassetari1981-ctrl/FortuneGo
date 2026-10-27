@@ -165,15 +165,15 @@ export const SLOT_GAMES: SlotGameDef[] = [
     hot: true,
     description: 'Cobra da sorte 2025 com wilds expansivos e multiplicadores x5!',
     symbols: [
-      { id: 'snake', emoji: '🐍', name: 'Cobra', payout: { 3: 65 }, isWild: true, color: '#5B21B6' },
-      { id: 'ingot', emoji: '💰', name: 'Pote Ouro', payout: { 3: 65 }, color: '#FBBF24' },
-      { id: 'bamboo', emoji: '🎋', name: 'Bambu', payout: { 3: 30 }, color: '#22C55E' },
-      { id: 'lantern', emoji: '🏮', name: 'Lanterna', payout: { 3: 10 }, color: '#EF4444' },
+      { id: 'snake', emoji: '🐍', name: 'Cobra WILD', payout: { 3: 65 }, isWild: true, color: '#5B21B6' },
+      { id: 'ingot', emoji: '🟡', name: 'Lingote Ouro', payout: { 3: 40 }, color: '#FBBF24' },
+      { id: 'mic', emoji: '🎙️', name: 'Microfone', payout: { 3: 20 }, color: '#22C55E' },
+      { id: 'dollar', emoji: '💲', name: 'Dólar Coroa', payout: { 3: 25 }, color: '#F59E0B' },
+      { id: 'pouch', emoji: '👛', name: 'Bolsa Dinheiro', payout: { 3: 18 }, color: '#92400E' },
+      { id: 'speakers', emoji: '🔊', name: 'Caixas Som', payout: { 3: 10 }, color: '#06B6D4' },
       { id: 'fan', emoji: '🪭', name: 'Leque', payout: { 3: 8 }, color: '#EC4899' },
       { id: 'envelope', emoji: '🧧', name: 'Envelope', payout: { 3: 12 }, color: '#DC2626' },
       { id: 'cup', emoji: '🍵', name: 'Taça', payout: { 3: 15 }, color: '#06B6D4' },
-      { id: 'coinbag', emoji: '🧧', name: 'Envelope Ouro', payout: { 3: 18 }, color: '#F87171' },
-      { id: 'orange', emoji: '🥮', name: 'Bolinho', payout: { 3: 6 }, color: '#FB923C' },
     ]
   },
   {

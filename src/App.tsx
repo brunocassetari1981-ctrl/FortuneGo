@@ -10,6 +10,7 @@ import { BannerCarousel } from './components/BannerCarousel';
 import { CategoryTabs } from './components/CategoryTabs';
 import { GameGrid } from './components/GameGrid';
 import { SlotGameModal } from './components/SlotGameModal';
+import { FortuneSnakeModal } from './components/FortuneSnakeModal';
 import { RainbowFortuneWheelModal } from './components/RainbowFortuneWheelModal';
 import { MissionsModal } from './components/MissionsModal';
 import { StoreModal } from './components/StoreModal';
@@ -591,16 +592,28 @@ export default function App() {
 
       <BottomTabBar active={bottomTab} onChange={handleBottomNav} onDeposit={() => setShowDeposit(true)} />
 
-      {/* Overlays & Modals */}
-      <SlotGameModal
-        isOpen={!!activeSlotGame}
-        game={activeSlotGame}
-        onClose={() => setActiveSlotGame(null)}
-        coins={state.coins}
-        onBet={handleSlotBet}
-        onWin={handleSlotWin}
-        soundEnabled={state.soundEnabled}
-      />
+      {/* Overlays & Modals — Fortune Snake com tela roxa idêntica ao outro app */}
+      {activeSlotGame?.id === 'fortune-snake' ? (
+        <FortuneSnakeModal
+          isOpen={!!activeSlotGame}
+          game={activeSlotGame}
+          onClose={() => setActiveSlotGame(null)}
+          coins={state.coins}
+          onBet={handleSlotBet}
+          onWin={handleSlotWin}
+          soundEnabled={state.soundEnabled}
+        />
+      ) : (
+        <SlotGameModal
+          isOpen={!!activeSlotGame}
+          game={activeSlotGame}
+          onClose={() => setActiveSlotGame(null)}
+          coins={state.coins}
+          onBet={handleSlotBet}
+          onWin={handleSlotWin}
+          soundEnabled={state.soundEnabled}
+        />
+      )}
 
       <RainbowFortuneWheelModal
         isOpen={showWheel}
