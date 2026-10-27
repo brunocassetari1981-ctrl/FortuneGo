@@ -52,7 +52,6 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
   const isFortuneSeries = game ? (game.category.includes('Fortune') || game.id.startsWith('fortune-')) : false;
   const isJackpotGame = isFortuneSeries || isRabbit2;
   const jackpotVals = isJackpotGame ? { grand: 12394641, major: 940670, minor: 2, mini: 1 } : null;
-  const headerSubtitle = isPinata ? 'PINATA WINS • RTP 96.8% • 9 GRÁTIS' : `${game?.name.toUpperCase()} • RTP ${game?.rtp.toFixed(1)}% • ${game?.volatility}`;
 
   // Preload animal thumbs for instant high-res render
   useEffect(() => {
@@ -94,6 +93,7 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
   }, [autoSpin, spinning, game, turbo, bet]);
 
   if (!isOpen || !game) return null;
+  const headerSubtitle = isPinata ? 'PINATA WINS • RTP 96.8% • 9 GRÁTIS' : `${game.name.toUpperCase()} • RTP ${game.rtp.toFixed(1)}% • ${game.volatility}`;
   const canSpin = coins >= bet || freeSpins > 0;
 
   // Cleanup any in-flight reel animations

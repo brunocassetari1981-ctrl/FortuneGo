@@ -1,69 +1,7 @@
 import { SlotGameDef, SlotSymbol } from '../types/game';
 
-/**
- * FortuneGo Slot Engine — Deterministic Win Evaluation & Payout Core
- *
- * Guarantees:
- * 1. Visual stop ↔ backend state 1:1 alignment (grid[reel][row] is source of truth)
- * 2. Payline evaluation is pure — no async lag, no edge-case desync
- * 3. RTP ~ 96.5% via weighted pools + forced-win injection (auditable)
- * 4. Wild = substitute, Scatter = independent bonus
- */
-
-// ─── Payline Definitions ─────────────────────────────────────────────────────
-// Coordinates are [reel, row]. Supports 3x3 (5 lines) and 5x3/5x4 (up to 20 lines).
-// All definitions are visual-order aligned: line path ↔ side numbers 2,3,1,6...
-
-const PAYLINES_5: [number, number][][] = [
-  [[0,0],[1,0],[2,0]], // 1 top
-  [[0,1],[1,1],[2,1]], // 2 middle (most frequent)
-  [[0,2],[1,2],[2,2]], // 3 bottom
-  [[0,0],[1,1],[2,2]], // 4 diag \
-  [[0,2],[1,1],[2,0]], // 5 diag /
-];
-
-const PAYLINES_10: [number, number][][] = [
-  ...PAYLINES_5,
-  [[0,0],[1,0],[2,1],[3,1],[4,1]], // 6
-  [[0,2],[1,2],[2,1],[3,1],[4,1]], // 7
-  [[0,1],[1,0],[2,1],[3,2],[4,1]], // 8 zigzag
-  [[0,1],[1,2],[2,1],[3,0],[4,1]], // 9 zigzag inv
-  [[0,0],[1,1],[2,0],[3,1],[4,0]], // 10 wave top
-];
-
-// Extended for 15/20 lines (Dragon Hatch 5x5 etc.) — fall back to middle-row variants
-function buildPaylines(reels: number, rows: number, count: number): [number, number][][] {
-  const all = [...PAYLINES_10];
-  // Generate additional lines programmatically: horizontal + V-shapes
-  const extras: [number, number][][] = [
-    [[0,0],[1,1],[2,2],[3,1],[4,0]],
-    [[0,2],[1,1],[2,0],[3,1],[4,2]],
-    [[0,1],[1,1],[2,1],[3,1],[4,1]], // middle straight (duplicate but valid)
-    [[0,0],[1,0],[2,0],[3,0],[4,0]],
-    [[0,2],[1,2],[2,2],[3,2],[4,2]],
-    [[0,0],[1,2],[2,0],[3,2],[4,0]],
-    [[0,2],[1,0],[2,2],[3,0],[4,2]],
-    [[0,1],[1,2],[2,2],[3,2],[4,1]],
-    [[0,1],[1,0],[2,0],[3,0],[4,1]],
-    [[0,2],[1,1],[2,1],[3,1],[4,2]],
-  ];
-  all.push(...extras);
-  // Clamp and normalize to reels/rows
-  return all.slice(0, count).map(line =>
-    line.slice(0, reels).map(([r, row]) => [r, Math.min(row, rows - 1)] as [number, number])
-  );
-}
-
-function getActivePaylines(reels: number, rows: number, paylines: number): [number, number][][] {
-  if (paylines <= 5) return PAYLINES_5.slice(0, paylines).map(l => l.slice(0, reels) as [number, number][]);
-  if (reels === 3) return PAYLINES_5.slice(0, Math.min(paylines, 5));
-  return buildPaylines(reels, rows, paylines);
-}
-
-// ─── Types ──────────────────────────────────────────────────────────────────
-
 export interface SlotSpinResult {
-  grid: string[][]; // [reel][row] symbolId — visual source of truth
+  grid: string[][]; // [reel][row] symbolId
   winPaylines: Array<{ payline: number; symbolId: string; count: number; amount: number; positions: [number, number][] }>;
   totalWin: number;
   isBigWin: boolean;
@@ -72,193 +10,178 @@ export interface SlotSpinResult {
   hasScatter: boolean;
 }
 
-// ─── Weighted Pool (RTP-calibrated) ─────────────────────────────────────────
+// Paylines definitions: horizontal, diagonals, zigzag
+const PAYLINES_5 = [
+  // 5 lines for 3x3
+  [[0,0],[1,0],[2,0]], // top row
+  [[0,1],[1,1],[2,1]], // middle
+  [[0,2],[1,2],[2,2]], // bottom
+  [[0,0],[1,1],[2,2]], // diag \
+  [[0,2],[1,1],[2,0]], // diag /
+];
+const PAYLINES_10 = [
+  ...PAYLINES_5,
+  [[0,0],[1,0],[2,1],[3,1],[4,1]],
+  [[0,2],[1,2],[2,1],[3,1],[4,1]],
+  [[0,1],[1,0],[2,1],[3,2],[4,1]],
+  [[0,1],[1,2],[2,1],[3,0],[4,1]],
+  [[0,0],[1,1],[2,0],[3,1],[4,0]],
+];
 
-function buildWeightedPool(symbols: SlotSymbol[]): SlotSymbol[] {
-  const weighted: SlotSymbol[] = [];
-  for (const s of symbols) {
-    let weight: number;
-    if (s.isScatter) weight = 2; // rarest → bonus trigger ~2-3%
-    else if (s.isWild) weight = 3; // wild ~3-4%
-    else if ((s.payout[3] ?? 0) >= 50) weight = 4; // premium
-    else if ((s.payout[3] ?? 0) >= 20) weight = 6; // mid
-    else weight = 12; // low
-    for (let i = 0; i < weight; i++) weighted.push(s);
-  }
-  return weighted;
-}
-
-// Seeded PRNG for deterministic tests (xorshift32)
-export function createRng(seed: number): () => number {
-  let s = seed | 0;
-  if (s === 0) s = 1;
-  return () => {
-    s ^= s << 13; s ^= s >>> 17; s ^= s << 5;
-    return ((s >>> 0) % 1000000) / 1000000;
-  };
-}
-
-// ─── Core Spin Generator ────────────────────────────────────────────────────
-
-/**
- * Generates a spin result. The returned `grid` IS the visual stop position —
- * no further transformation is applied by the renderer, guaranteeing 1:1 sync.
- *
- * @param game game definition
- * @param bet bet amount (affects payout scaling)
- * @param forcedWin optional override: true forces a win, false forces loss (for tests)
- * @param rng optional RNG for deterministic unit tests
- */
-export function generateSpin(
-  game: SlotGameDef,
-  bet: number,
-  forcedWin?: boolean,
-  rng: () => number = Math.random
-): SlotSpinResult {
+export function generateSpin(game: SlotGameDef, bet: number, forcedWin?: boolean): SlotSpinResult {
   const { reels, rows, paylines, symbols } = game;
-  const weighted = buildWeightedPool(symbols);
+  const grids: string[][] = [];
 
-  // Decide win intent: 34% base win rate → ~96.5% RTP after payout math
-  const shouldWin = forcedWin !== undefined ? forcedWin : rng() < 0.34;
+  // Build weighted symbol pools — wild/scatter rarer, low-payout more common
+  const weighted: SlotSymbol[] = [];
+  symbols.forEach(s => {
+    let weight = 10;
+    if (s.isWild) weight = 3;
+    if (s.isScatter) weight = 2;
+    if (s.payout[3] >= 40) weight = 4;
+    else if (s.payout[3] >= 20) weight = 6;
+    else weight = 12;
+    for (let i = 0; i < weight; i++) weighted.push(s);
+  });
 
-  // 1) Fill grid randomly (visual stop)
-  const grid: string[][] = [];
+  // Force win injection for fun (about 28% RTP feel)
+  const shouldWin = forcedWin !== undefined ? forcedWin : Math.random() < 0.34;
+
+  // Generate grid with potential win bias
   for (let r = 0; r < reels; r++) {
     const col: string[] = [];
     for (let row = 0; row < rows; row++) {
-      const pick = weighted[Math.floor(rng() * weighted.length)];
+      if (shouldWin && row === 1 && r < 3 && Math.random() < 0.55) {
+        // bias middle line to match for win
+        // we leave handling to evaluation
+      }
+      const pick = weighted[Math.floor(Math.random() * weighted.length)];
       col.push(pick.id);
     }
-    grid.push(col);
+    grids.push(col);
   }
 
-  // 2) If win intended, inject a guaranteed middle-line match (deterministic)
-  //    This does NOT create desync — we mutate grid BEFORE evaluation.
-  if (shouldWin && rng() < 0.62) {
-    const candidates = symbols.filter(s => !s.isScatter && !s.isWild);
-    if (candidates.length > 0) {
-      const winSym = candidates[Math.floor(rng() * candidates.length)];
-      const winCount = rng() < 0.12 && reels >= 5 ? 5 : rng() < 0.25 ? 4 : 3;
-      const midRow = Math.floor(rows / 2);
-      for (let r = 0; r < Math.min(winCount, reels); r++) {
-        grid[r][midRow] = winSym.id;
-      }
-      // Occasional wild boost on same line (2x multiplier)
-      if (rng() < 0.18 && reels > 3) {
-        const wild = symbols.find(s => s.isWild);
-        if (wild) grid[Math.floor(rng() * winCount)][midRow] = wild.id;
-      }
+  // If we want to ensure a win ~40% of wins, force middle line to match
+  if (shouldWin && Math.random() < 0.62) {
+    const winSym = symbols.filter(s => !s.isScatter)[Math.floor(Math.random() * symbols.filter(s => !s.isScatter).length)];
+    // Force middle line to have at least 3 in a row
+    const winCount = Math.random() < 0.15 ? (reels >= 5 ? 5 : 3) : 3; // occasional 5-in-a-row
+    for (let r = 0; r < winCount; r++) {
+      grids[r][Math.floor(rows / 2)] = winSym.id;
     }
   }
 
-  // 3) Evaluate — pure function, no side effects
-  return evaluateGrid(grid, game, bet);
-}
+  // Evaluate paylines
+  const activePaylines = paylines === 5 ? PAYLINES_5 : paylines === 10 ? PAYLINES_10.slice(0, paylines) : PAYLINES_5;
+  // For 5 reels, we need correct payline coords length; but our 3x3 uses 5 lines; for 5 reels adapt
+  let usePaylines = activePaylines;
+  if (reels === 5 && paylines > 5) {
+    // Use generic 5-reel paylines (horizontal middle plus some)
+    usePaylines = Array.from({ length: paylines }, (_, i) => {
+      if (i < PAYLINES_10.length) return PAYLINES_10[i];
+      // fallback to middle line
+      return Array.from({ length: reels }, (_, reel) => [reel, Math.floor(rows/2)] as [number, number]);
+    });
+  } else if (reels === 3) {
+    usePaylines = PAYLINES_5.slice(0, Math.min(paylines, 5));
+  }
 
-/**
- * Pure evaluation: grid + paytable → win result.
- * This is the auditing entry point — can be called with any grid to verify payout.
- */
-export function evaluateGrid(grid: string[][], game: SlotGameDef, bet: number): SlotSpinResult {
-  const { reels, rows, paylines, symbols } = game;
-  const active = getActivePaylines(reels, rows, paylines);
-
+  const winPaylines: SlotSpinResult['winPaylines'] = [];
   let totalWin = 0;
   let hasWild = false;
   let hasScatter = false;
-  let scatterCount = 0;
-  const winPaylines: SlotSpinResult['winPaylines'] = [];
 
-  // Scan for wild/scatter presence (also for glow effects)
-  for (const col of grid) for (const sid of col) {
-    const s = symbols.find(x => x.id === sid);
+  // Count scatters
+  let scatterCount = 0;
+  grids.forEach(col => col.forEach(symId => {
+    const s = symbols.find(x => x.id === symId);
     if (s?.isWild) hasWild = true;
     if (s?.isScatter) { hasScatter = true; scatterCount++; }
-  }
+  }));
 
-  for (let pi = 0; pi < active.length; pi++) {
-    const line = active[pi];
-    const seq: string[] = [];
-    const coords: [number, number][] = [];
-    for (const [reel, row] of line) {
-      const sid = grid[reel]?.[row];
-      if (sid) { seq.push(sid); coords.push([reel, row]); }
-    }
+  // Evaluate each payline
+  for (let pi = 0; pi < usePaylines.length; pi++) {
+    const line = usePaylines[pi];
+    if (!line) continue;
+    // Build symbol sequence along payline
+    const seq: string[] = line.map(([reel, row]) => grids[reel]?.[row]).filter(Boolean) as string[];
     if (seq.length < 3) continue;
 
-    // Determine target symbol: first non-wild in sequence
+    // Find first non-wild to determine symbol to match
     let targetId: string | null = null;
+    let wildCountPrefix = 0;
     for (const sid of seq) {
       const sym = symbols.find(s => s.id === sid);
       if (!sym) continue;
-      if (!sym.isWild) { targetId = sid; break; }
+      if (sym.isWild) { wildCountPrefix++; continue; }
+      targetId = sid;
+      break;
     }
-    if (!targetId) targetId = seq[0]; // all wilds → wild win
+    if (!targetId) {
+      // all wilds -> treat as wild win
+      targetId = symbols.find(s => s.isWild)?.id || seq[0];
+    }
+    if (!targetId) continue;
     const targetSym = symbols.find(s => s.id === targetId);
     if (!targetSym) continue;
 
-    // Count consecutive matching from left (wild substitutes)
+    // Count consecutive matching (wild substitutes)
     let count = 0;
     const positions: [number, number][] = [];
     for (let i = 0; i < seq.length; i++) {
       const sid = seq[i];
       const sym = symbols.find(s => s.id === sid);
       if (!sym) break;
-      if (sid === targetId || sym.isWild) { count++; positions.push(coords[i]); }
-      else break;
+      if (sid === targetId || sym.isWild) {
+        count++;
+        positions.push(line[i] as [number, number]);
+      } else break;
     }
-    if (count < 3) continue;
 
-    const base = targetSym.payout[3] ?? 5;
-    let payoutMult = base;
-    // 4/5-of-a-kind scaling (if defined)
-    if (count === 4 && targetSym.payout[5] !== undefined) payoutMult = targetSym.payout[5]! * 0.4;
-    if (count === 5 && targetSym.payout[5] !== undefined) payoutMult = targetSym.payout[5]!;
+    // Need at least 3 consecutive
+    if (count >= 3) {
+      const basePayout = targetSym.payout[3] || 5;
+      // For 5-reel games, 4 or 5 in a row pays more
+      let payoutMult = basePayout;
+      if (count === 4 && targetSym.payout[5]) payoutMult = targetSym.payout[5]! * 0.4;
+      if (count === 5 && targetSym.payout[5]) payoutMult = targetSym.payout[5]!;
 
-    const lineHasWild = seq.slice(0, count).some(sid => symbols.find(s => s.id === sid)?.isWild);
-    const wildMult = lineHasWild ? 2 : 1; // wild 2x boost (visible in glow)
-    const lengthMult = count === 5 ? 1.5 : count === 4 ? 1.2 : 1;
+      // Wild multiplier
+      let wildMult = 1;
+      // If line contains wild, boost
+      const lineHasWild = seq.slice(0, count).some(sid => symbols.find(s => s.id === sid)?.isWild);
+      if (lineHasWild) wildMult = 2;
 
-    const amount = Math.floor(bet * payoutMult * wildMult * lengthMult);
-    if (amount > 0) {
-      winPaylines.push({ payline: pi, symbolId: targetId, count, amount, positions });
-      totalWin += amount;
+      const amount = Math.floor(bet * payoutMult * wildMult * (count === 5 ? 1.5 : count === 4 ? 1.2 : 1));
+      if (amount > 0) {
+        winPaylines.push({ payline: pi, symbolId: targetId, count, amount, positions });
+        totalWin += amount;
+      }
     }
   }
 
-  // Scatter bonus (independent of paylines)
+  // Scatter bonus (not payline-based)
   if (scatterCount >= 3) {
     const scatterBonus = bet * (scatterCount === 3 ? 5 : scatterCount === 4 ? 15 : 50);
     totalWin += scatterBonus;
-    winPaylines.push({
-      payline: 99,
-      symbolId: symbols.find(s => s.isScatter)?.id ?? 'scatter',
-      count: scatterCount,
-      amount: scatterBonus,
-      positions: [],
-    });
+    // add pseudo payline for scatter
+    winPaylines.push({ payline: 99, symbolId: symbols.find(s => s.isScatter)?.id || 'scatter', count: scatterCount, amount: scatterBonus, positions: [] });
   }
+
+  // Small consolation for near misses? No, keep as is.
 
   const isBigWin = totalWin >= bet * 10;
   const isMegaWin = totalWin >= bet * 25;
 
-  return { grid, winPaylines, totalWin, isBigWin, isMegaWin, hasWild, hasScatter };
-}
-
-// ─── Verification Helpers (for audits/tests) ─────────────────────────────────
-
-export function verifyPayoutIntegrity(result: SlotSpinResult, bet: number): { ok: boolean; reason?: string } {
-  const sum = result.winPaylines.reduce((a, w) => a + w.amount, 0);
-  if (sum !== result.totalWin) return { ok: false, reason: `Sum mismatch: paylines sum ${sum} != totalWin ${result.totalWin}` };
-  if (result.isBigWin !== (result.totalWin >= bet * 10)) return { ok: false, reason: 'isBigWin flag inconsistent' };
-  if (result.isMegaWin !== (result.totalWin >= bet * 25)) return { ok: false, reason: 'isMegaWin flag inconsistent' };
-  // Positions must be within grid bounds
-  for (const w of result.winPaylines) {
-    for (const [r, row] of w.positions) {
-      if (r < 0 || row < 0) return { ok: false, reason: `Invalid position [${r},${row}]` };
-    }
-  }
-  return { ok: true };
+  return {
+    grid: grids,
+    winPaylines,
+    totalWin,
+    isBigWin,
+    isMegaWin,
+    hasWild,
+    hasScatter,
+  };
 }
 
 export function getSymbolById(game: SlotGameDef, id: string): SlotSymbol | undefined {
