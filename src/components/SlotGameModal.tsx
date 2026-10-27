@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Minus, Plus, Zap, Volume2, VolumeX, Info } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { SlotGameDef } from '../types/game';
 import { generateSpin, getSymbolById } from '../utils/slotEngine';
 import { sound } from '../utils/audio';
-import { Easing, animate, staggerAnimate } from '../utils/animationEngine';
 
 interface SlotGameModalProps {
   isOpen: boolean;
@@ -16,15 +15,6 @@ interface SlotGameModalProps {
   soundEnabled: boolean;
 }
 
-/**
- * FortuneGo SlotGameModal — Optimized Reel Engine
- *
- * Performance goals:
- * - 60fps RAF-driven reel animation (no setInterval frame drops)
- * - GPU-accelerated transform3d + will-change
- * - Cubic-bezier easing: easeInQuad (wind-up) → linear (cruise) → easeOutCubic (settle)
- * - Visual ↔ backend 1:1 sync: grid is source of truth, offsets only for display
- */
 export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, game, coins, onWin, onBet, soundEnabled }) => {
   const [betIdx, setBetIdx] = useState(1);
   const betOptions = [5, 10, 20, 50, 100, 200, 500];
@@ -42,25 +32,16 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
   const [freeSpins, setFreeSpins] = useState(0);
   const [spinCount, setSpinCount] = useState(47);
   const autoRef = useRef<number | null>(null);
-  const reelAnimRefs = useRef<{ cancel: () => void }[]>([]);
   const [musicOn, setMusicOn] = useState(true);
   const [paytable, setPaytable] = useState<number[]>([250, 10, 2.5, 0.25]);
   const touchStartY = useRef(0);
 
+  // Tema por animal — usa cores do game mas mantém mesma interação
   const isPinata = game?.id === 'pinata-wins';
   const isRabbit2 = game?.id === 'fortune-rabbit-2';
   const isFortuneSeries = game ? (game.category.includes('Fortune') || game.id.startsWith('fortune-')) : false;
   const isJackpotGame = isFortuneSeries || isRabbit2;
   const jackpotVals = isJackpotGame ? { grand: 12394641, major: 940670, minor: 2, mini: 1 } : null;
-
-  // Preload animal thumbs for instant high-res render
-  useEffect(() => {
-    if (game?.thumb) {
-      const img = new Image();
-      img.src = game.thumb;
-      // Also preload symbol-related assets if any CDN provides images; fallback to emoji glow
-    }
-  }, [game?.thumb]);
 
   useEffect(() => {
     if (isOpen && game) {
@@ -93,17 +74,12 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
   }, [autoSpin, spinning, game, turbo, bet]);
 
   if (!isOpen || !game) return null;
+
   const headerSubtitle = isPinata ? 'PINATA WINS • RTP 96.8% • 9 GRÁTIS' : `${game.name.toUpperCase()} • RTP ${game.rtp.toFixed(1)}% • ${game.volatility}`;
   const canSpin = coins >= bet || freeSpins > 0;
 
-  // Cleanup any in-flight reel animations
-  const cancelReelAnims = () => {
-    reelAnimRefs.current.forEach(h => h.cancel());
-    reelAnimRefs.current = [];
-  };
-
-  const handleSpin = useCallback(async () => {
-    if (spinning || !game) return;
+  const handleSpin = async () => {
+    if (spinning) return;
     if (!canSpin) return;
     if (freeSpins === 0) {
       const ok = onBet(bet);
@@ -115,77 +91,44 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
     setWinPositions(new Set());
     sound.startReelSpinTicks();
     sound.vibrate(30);
+    setReelOffsets([0, 0, 0, 0, 0]);
 
-    // Cancel prior anims and reset offsets with RAF for perfect alignment
-    cancelReelAnims();
-    setReelOffsets(new Array(game.reels).fill(0));
+    const durationBase = turbo ? 420 : 780;
+    const reelDelays = game.reels === 3 ? [0, 90, 190] : [0, 80, 160, 240, 320];
 
-    const durationBase = turbo ? 380 : 720;
-    const cruiseMs = turbo ? 220 : 420;
-    const settleMs = turbo ? 260 : 520;
-    const reelDelay = game.reels === 3 ? 85 : 75;
-
-    // Phase 1 — WIND-UP + CRUISE: staggered reels accelerate using RAF + easing
-    // Each reel gets a quick easeInQuad burst, then linear cruise with fake grids
-    const fakeInterval = window.setInterval(() => {
-      const fake = generateSpin(game, bet, false);
-      setGrid(fake.grid);
-    }, 70);
-
-    // Use staggerAnimate for precise frame-synced offsets (cruise phase)
-    // We animate a virtual progress 0→1 per reel; offset = progress * -120px
-    const cruiseHandles = staggerAnimate(
-      game.reels,
-      reelDelay,
-      cruiseMs,
-      Easing.easeInQuad,
-      (idx, eased) => {
+    reelDelays.forEach((delay, idx) => {
+      setTimeout(() => {
         setReelOffsets(prev => {
           const n = [...prev];
-          n[idx] = -Math.round(eased * 120);
+          n[idx] = -120;
           return n;
         });
-      }
-    );
-    reelAnimRefs.current.push(...cruiseHandles);
+      }, delay);
+    });
 
-    await new Promise(r => setTimeout(r, cruiseMs + (game.reels - 1) * reelDelay + 60));
-    clearInterval(fakeInterval);
+    const interim = setInterval(() => {
+      const fake = generateSpin(game, bet, false);
+      setGrid(fake.grid);
+    }, 85);
+
+    await new Promise(r => setTimeout(r, durationBase + (reelDelays[reelDelays.length - 1] || 0) + 120));
+
+    clearInterval(interim);
     sound.stopReelTicks();
 
-    // Phase 2 — DECELERATION: sequential settle with easeOutCubic (zero frame drops)
-    // Compute final result BEFORE visual settle to guarantee 1:1 sync
-    const result = generateSpin(game, bet);
-
-    // Animate each reel back to 0 with natural easeOutCubic + staggered thud
     for (let i = 0; i < game.reels; i++) {
-      // Small delay between reels for realism (like video)
-      if (i > 0) await new Promise(r => setTimeout(r, turbo ? 65 : 110));
-
-      // RAF settle for this reel: from -120 → 0
-      const startOffset = -120;
-      await new Promise<void>(resolve => {
-        const h = animate(settleMs, Easing.easeOutCubic, (eased) => {
-          const cur = startOffset + (0 - startOffset) * eased; // -120 → 0
-          setReelOffsets(prev => {
-            const n = [...prev];
-            n[i] = Math.round(cur);
-            return n;
-          });
-        }, () => {
-          sound.playReelStop(i);
-          resolve();
-        });
-        reelAnimRefs.current.push(h);
-      });
+      await new Promise(r => setTimeout(r, turbo ? 70 : 130));
+      sound.playReelStop(i);
+      setReelOffsets(prev => { const n = [...prev]; n[i] = 0; return n; });
     }
 
-    // Commit final grid — this is the authoritative stop position (audited)
+    const result = generateSpin(game, bet);
     setGrid(result.grid);
 
-    // Derive win positions from backend result (no visual guesswork)
     const winSet = new Set<string>();
-    result.winPaylines.forEach(w => w.positions.forEach(([reel, row]) => winSet.add(`${reel}-${row}`)));
+    result.winPaylines.forEach(w => {
+      w.positions.forEach(([reel, row]) => winSet.add(`${reel}-${row}`));
+    });
     setWinPositions(winSet);
 
     if (result.totalWin > 0) {
@@ -195,12 +138,12 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
         setBigWinAmount(result.totalWin);
         setShowBigWin(true);
         sound.playBigWinSequence();
-        confetti({ particleCount: 140, spread: 90, origin: { y: 0.6 }, ticks: 240, gravity: 0.9, scalar: 1.2 });
+        confetti({ particleCount: 140, spread: 90, origin: { y: 0.6 } });
         setTimeout(() => setShowBigWin(false), 2400);
         onWin(result.totalWin, game.name, true);
       } else if (result.isBigWin) {
         sound.playWinFanfare();
-        confetti({ particleCount: 90, spread: 65, ticks: 200 });
+        confetti({ particleCount: 90, spread: 65 });
         onWin(result.totalWin, game.name, true);
       } else {
         sound.playWinLine();
@@ -215,14 +158,14 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
 
     const mult = bet / 10;
     setPaytable([250 * mult, 10 * mult, 2.5 * mult, 0.25 * mult].map(v => +v.toFixed(2)));
+
     if (freeSpins > 0) setFreeSpins(s => s - 1);
     setSpinning(false);
-  }, [spinning, game, canSpin, freeSpins, bet, turbo, coins, onBet, onWin]);
+  };
 
   const handleClose = () => {
     setAutoSpin(false);
     if (autoRef.current) window.clearInterval(autoRef.current);
-    cancelReelAnims();
     sound.stopBackground();
     sound.stopReelTicks();
     onClose();
@@ -231,9 +174,11 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
   const onTouchStart = (e: React.TouchEvent) => { touchStartY.current = e.touches[0].clientY; };
   const onTouchEnd = (e: React.TouchEvent) => {
     const dy = touchStartY.current - e.changedTouches[0].clientY;
-    if (Math.abs(dy) > 45 && !spinning) handleSpin();
+    if (dy > 45 && !spinning) handleSpin();
+    if (dy < -45 && !spinning) handleSpin();
   };
 
+  // Cores temáticas por personagem — mantém mesma interação
   const headerBg = `linear-gradient(to bottom, ${game.primaryColor}, ${game.secondaryColor})`;
   const bottomBg = `linear-gradient(to bottom, ${game.primaryColor}dd, ${game.secondaryColor}dd)`;
   const isSmallGrid = game.reels === 3;
@@ -241,12 +186,14 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
   return (
     <div className="fixed inset-0 z-[60] bg-black backdrop-blur-[2px] flex items-center justify-center p-0 sm:p-3 overflow-hidden" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       <div className="relative w-full max-w-[390px] h-[100dvh] sm:h-[92vh] sm:rounded-[28px] overflow-hidden border-0 sm:border-[7px] sm:border-[#111] bg-[#1a0e2b] flex flex-col shadow-2xl sm:shadow-[0_20px_60px_rgba(0,0,0,0.9)]">
+        {/* Status bar */}
         <div className="h-6 bg-[#0a1f15] flex items-center justify-between px-3 text-[10px] font-bold text-white/70 shrink-0">
           <span>FortuneGo • {game.name}</span>
           <span>Horário de login: 00:{String(Math.floor(Date.now()/1000)%60).padStart(2,'0')}:{String(new Date().getSeconds()).padStart(2,'0')}</span>
         </div>
 
-        {isJackpotGame && jackpotVals && (
+        {/* WG Jackpot header — só Rabbit2 (como no vídeo roxo) */}
+        {isRabbit2 && jackpotVals && (
           <div className="bg-gradient-to-r from-violet-900 via-fuchsia-800 to-violet-900 px-2 py-1.5 flex flex-col gap-1 shrink-0 border-y border-yellow-400/30">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-black tracking-widest text-yellow-300 flex items-center gap-1">⭐ WG JACKPOT</span>
@@ -269,30 +216,26 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
           </div>
         )}
 
-        {/* Animal Character Header — high-res thumb + glow */}
+        {/* Character header — cor por personagem, mesmo layout */}
         <div className="relative h-[18%] min-h-[110px] shrink-0 overflow-hidden flex items-center justify-center" style={{ background: headerBg }}>
+          {/* pagode decorativo — cor adaptada */}
           <div className="absolute top-0 inset-x-0 h-8 opacity-90" style={{ background: game.primaryColor, borderBottom: `4px solid ${game.secondaryColor}` }} />
           <div className="absolute top-6 inset-x-0 flex justify-center gap-6 opacity-95">
-            <span className="w-6 h-7 rounded flex items-center justify-center text-[10px] font-black border shadow-sm" style={{ background: game.secondaryColor, color: 'white', borderColor: 'rgba(255,255,255,0.5)' }}>恭喜</span>
-            <span className="w-6 h-7 rounded flex items-center justify-center text-[10px] font-black border shadow-sm" style={{ background: game.secondaryColor, color: 'white', borderColor: 'rgba(255,255,255,0.5)' }}>发财</span>
+            <span className="w-6 h-7 rounded flex items-center justify-center text-[10px] font-black border" style={{ background: game.secondaryColor, color: 'white', borderColor: 'rgba(255,255,255,0.5)' }}>恭喜</span>
+            <span className="w-6 h-7 rounded flex items-center justify-center text-[10px] font-black border" style={{ background: game.secondaryColor, color: 'white', borderColor: 'rgba(255,255,255,0.5)' }}>发财</span>
           </div>
           <div className="relative mt-6 flex flex-col items-center">
-            {/* High-res animal thumb with crisp border + inner glow */}
-            <div className="w-16 h-16 rounded-full border-4 border-white/40 shadow-[0_4px_16px_rgba(0,0,0,0.4),inset_0_0_12px_rgba(255,255,255,0.6)] overflow-hidden bg-white/90 flex items-center justify-center relative">
-              <img
-                src={game.thumb}
-                alt={game.name}
-                className="w-full h-full object-cover"
-                loading="eager"
-                decoding="async"
-                style={{ imageRendering: 'auto' as const }}
-                onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-              />
-              <span className="text-2xl absolute drop-shadow-[0_2px_6px_rgba(0,0,0,0.6)]">{game.symbols[0]?.emoji}</span>
+            <div className="w-16 h-16 rounded-full border-4 border-white/40 shadow-lg overflow-hidden bg-white/90 flex items-center justify-center">
+              <img src={game.thumb} alt={game.name} className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+              <span className="text-3xl absolute">{game.symbols[0]?.emoji}</span>
             </div>
-            <div className="text-[10px] font-black text-white bg-black/20 px-2 py-0.5 rounded-full border border-white/20 mt-2 backdrop-blur shadow">
+            <div className="text-5xl drop-shadow-[0_3px_10px_rgba(0,0,0,0.6)] -mt-2">
+              {isPinata ? '🪅' : game.symbols[0]?.emoji || '🐯'}
+            </div>
+            <div className="text-[10px] font-black text-white bg-black/20 px-2 py-0.5 rounded-full border border-white/20 mt-1 backdrop-blur">
               {headerSubtitle}
             </div>
+            <span className="absolute -right-4 top-6 text-xl">{isPinata ? '🌮' : '🧨'}</span>
           </div>
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.16),transparent_40%)] pointer-events-none" />
           <button onClick={handleClose} className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/30 backdrop-blur text-white border border-white/20 flex items-center justify-center active:scale-95">
@@ -303,27 +246,31 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
           </button>
         </div>
 
-        {/* Reels — GPU-accelerated, zero frame drops */}
+        {/* Reels Area — mesma moldura dourada, mesma interação para todos */}
         <div className="flex-1 bg-[#0b1220] relative flex items-center justify-center p-2 overflow-hidden">
           <div className="absolute inset-2 rounded-2xl border-[6px] shadow-[inset_0_0_20px_rgba(255,215,0,0.35)] bg-gradient-to-b from-[#0f2847] to-[#0a1a30] pointer-events-none" style={{ borderColor: game.secondaryColor }} />
 
+          {/* Left payline */}
           <div className="absolute left-0 top-10 bottom-10 w-7 border-y-4 border-r-4 rounded-r-xl flex flex-col items-center justify-around py-2 text-[10px] font-black shadow-lg z-10" style={{ backgroundColor: game.primaryColor, borderColor: game.secondaryColor, color: 'white' }}>
             {(game.paylines === 10 ? [2,3,1,6,7,4,5,10,8,9] : game.paylines === 5 ? [1,2,3,4,5] : [1,2,3]).map(n => (
-              <span key={`L${n}`} className={`w-5 h-5 rounded-full flex items-center justify-center leading-none text-[10px] ${winPositions.size>0 ? 'bg-yellow-400 text-black animate-pulse shadow' : 'bg-black/30 text-white'}`}>{n}</span>
+              <span key={`L${n}`} className={`w-5 h-5 rounded-full flex items-center justify-center leading-none ${winPositions.size>0 ? 'bg-yellow-400 text-black animate-pulse' : 'bg-black/30 text-white'}`}>{n}</span>
             ))}
           </div>
+          {/* Right payline */}
           <div className="absolute right-0 top-10 bottom-10 w-7 border-y-4 border-l-4 rounded-l-xl flex flex-col items-center justify-around py-2 text-[10px] font-black shadow-lg z-10" style={{ backgroundColor: game.primaryColor, borderColor: game.secondaryColor, color: 'white' }}>
             {(game.paylines === 10 ? [2,4,1,6,8,3,5,10,7,9] : game.paylines === 5 ? [1,2,3,4,5] : [1,2,3]).map(n => (
-              <span key={`R${n}`} className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${winPositions.size>0 ? 'bg-yellow-400 text-black animate-pulse shadow' : 'bg-black/30 text-white'}`}>{n}</span>
+              <span key={`R${n}`} className={`w-5 h-5 rounded-full flex items-center justify-center ${winPositions.size>0 ? 'bg-yellow-400 text-black animate-pulse' : 'bg-black/30 text-white'}`}>{n}</span>
             ))}
           </div>
 
+          {/* Center reels */}
           <div className="relative z-10 w-[74%] max-w-[300px] h-[88%] rounded-xl border-2 overflow-hidden shadow-inner flex" style={{ borderColor: game.secondaryColor, background: 'linear-gradient(to bottom, #143a6b, #0a1f3a)' }}>
+            {/* Paytable column — para Fortune 3x3, mantém igual para todos */}
             {isSmallGrid && (
               <div className="w-[26%] border-r-2 flex flex-col items-center justify-around py-2 shrink-0" style={{ background: `linear-gradient(to bottom, ${game.secondaryColor}, ${game.primaryColor})`, borderColor: game.primaryColor }}>
                 {paytable.map((v, i) => (
                   <div key={i} className="flex flex-col items-center">
-                    <span className="text-[10px] font-black leading-none text-white drop-shadow">{v.toLocaleString('pt-BR')}</span>
+                    <span className="text-[10px] font-black leading-none" style={{ color: '#fff' }}>{v.toLocaleString('pt-BR')}</span>
                     {i < paytable.length - 1 && <div className="w-8 h-0.5 bg-black/20 mt-1" />}
                   </div>
                 ))}
@@ -333,42 +280,37 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
             <div className={`flex-1 grid ${game.reels === 3 ? 'grid-cols-3' : 'grid-cols-5'} gap-0 h-full`}>
               {Array.from({ length: game.reels }).map((_, reelIdx) => (
                 <div key={reelIdx} className="relative overflow-hidden border-r last:border-0 flex flex-col" style={{ borderColor: `${game.secondaryColor}33` }}>
-                  {/* GPU layer: translate3d + willChange */}
                   <div
-                    className="flex flex-col will-change-transform"
+                    className="flex flex-col transition-transform will-change-transform"
                     style={{
-                      transform: `translate3d(0, ${reelOffsets[reelIdx] || 0}px, 0)`,
-                      filter: spinning ? 'blur(0.6px) brightness(1.08)' : 'blur(0)',
-                      backfaceVisibility: 'hidden' as const,
+                      transform: `translateY(${reelOffsets[reelIdx] || 0}px)`,
+                      transitionDuration: spinning ? '180ms' : '420ms',
+                      transitionTimingFunction: spinning ? 'linear' : 'cubic-bezier(0.22,1,0.36,1)',
+                      filter: spinning ? 'blur(0.7px) brightness(1.1)' : 'blur(0)',
                     }}
                   >
                     {(grid[reelIdx] || Array.from({ length: game.rows }, () => game.symbols[0].id)).map((symId, rowIdx) => {
                       const sym = getSymbolById(game, symId) || game.symbols[0];
                       const isWin = winPositions.has(`${reelIdx}-${rowIdx}`);
                       return (
-                        <div
-                          key={`${reelIdx}-${rowIdx}`}
-                          className={`flex flex-col items-center justify-center relative border-b border-black/10 ${isWin ? 'bg-gradient-to-b from-yellow-200 to-amber-400 z-10 shadow-[0_0_14px_rgba(255,215,0,0.9)]' : 'bg-gradient-to-b from-[#1e3a5f] to-[#0f2847]'}`}
-                          style={{ height: `${100 / game.rows}%`, minHeight: 54 }}
-                        >
-                          {/* Animal symbol — high-res emoji with glow/shadow for realism */}
-                          <span
-                            className={`text-[26px] leading-none select-none ${isWin ? 'scale-110 drop-shadow-[0_3px_8px_rgba(255,215,0,0.9)]' : 'drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]'}`}
-                            style={{ filter: isWin ? 'brightness(1.15) saturate(1.2)' : 'brightness(1) saturate(1)' }}
-                          >
-                            {sym.emoji}
-                          </span>
-                          <span className="text-[7px] font-black text-white/70 tracking-widest uppercase mt-0.5">{sym.name.slice(0, 8)}</span>
+                        <div key={`${reelIdx}-${rowIdx}`} className={`min-h-[60px] flex flex-col items-center justify-center relative border-b border-black/10 ${isWin ? 'bg-gradient-to-b from-yellow-200 to-amber-400 animate-win-pulse z-10 scale-[1.02] shadow-[0_0_14px_rgba(255,215,0,0.9)]' : 'bg-gradient-to-b from-[#1e3a5f] to-[#0f2847]'}`} style={{ height: `${100 / game.rows}%` }}>
+                          <span className={`text-2xl leading-none drop-shadow ${isWin ? 'scale-110' : ''}`}>{sym.emoji}</span>
+                          <span className="text-[7px] font-black text-white/60 tracking-widest uppercase mt-0.5">{sym.name.slice(0, 8)}</span>
                           {sym.isWild && (
-                            <div className="absolute inset-x-1 bottom-1 text-[8px] font-black text-center py-0.5 rounded border shadow-md" style={{ background: `linear-gradient(to bottom, ${game.secondaryColor}, ${game.primaryColor})`, color: '#fff', borderColor: '#fff', textShadow: '0 1px 2px rgba(0,0,0,0.6)' }}>
+                            <div className="absolute inset-x-1 bottom-1 text-[8px] font-black text-center py-0.5 rounded border shadow" style={{ background: game.secondaryColor, color: '#fff', borderColor: '#fff' }}>
                               WILD
                             </div>
                           )}
-                          {isWin && <div className="absolute inset-0 border-2 border-yellow-200 rounded-sm pointer-events-none animate-pulse shadow-[inset_0_0_12px_rgba(255,255,255,0.6)]" />}
+                          {isWin && <div className="absolute inset-0 border-2 border-yellow-200 rounded-sm pointer-events-none animate-pulse" />}
                         </div>
                       );
                     })}
                   </div>
+                  {winPositions.size > 0 && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <div className="w-[92%] h-0.5 bg-gradient-to-r from-transparent via-yellow-300 to-transparent blur-[1px] opacity-80 animate-pulse" />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -381,21 +323,23 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
           )}
           {spinning && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="text-white/25 text-xs font-black tracking-[0.3em] animate-pulse">ROLANDO...</div>
+              <div className="text-white/20 text-xs font-black tracking-[0.3em] animate-pulse">ROLANDO...</div>
             </div>
           )}
         </div>
 
+        {/* Banner win — mesma para todos, cor do personagem */}
         <div className="h-7 border-y-2 flex items-center justify-center relative shrink-0" style={{ background: `linear-gradient(to right, ${game.primaryColor}, ${game.secondaryColor})`, borderColor: game.secondaryColor }}>
-          <div className="absolute left-2 w-6 h-6 rounded-full border flex items-center justify-center text-xs shadow" style={{ background: '#2a0f4a', borderColor: game.secondaryColor }}>{game.symbols[0]?.emoji}</div>
-          <div className="absolute right-2 w-6 h-6 rounded-full border flex items-center justify-center text-xs shadow" style={{ background: '#2a0f4a', borderColor: game.secondaryColor }}>{game.symbols[0]?.emoji}</div>
+          <div className="absolute left-2 w-6 h-6 rounded-full border flex items-center justify-center text-xs" style={{ background: '#2a0f4a', borderColor: game.secondaryColor }}>{game.symbols[0]?.emoji}</div>
+          <div className="absolute right-2 w-6 h-6 rounded-full border flex items-center justify-center text-xs" style={{ background: '#2a0f4a', borderColor: game.secondaryColor }}>{game.symbols[0]?.emoji}</div>
           {lastWin > 0 ? (
-            <span className="font-black text-yellow-100 text-sm tracking-wide animate-pulse drop-shadow">WIN R$ {lastWin.toFixed(2).replace('.', ',')} • x{(lastWin / bet).toFixed(1)}</span>
+            <span className="font-black text-yellow-200 text-sm tracking-wide animate-pulse">WIN R$ {lastWin.toFixed(2).replace('.', ',')} • x{(lastWin / bet).toFixed(1)}</span>
           ) : (
-            <span className="font-bold text-white/90 text-xs tracking-widest">GANHE ATÉ x5000! • 5 PARA GANHAR</span>
+            <span className="font-bold text-white/90 text-xs tracking-widest">{isPinata ? 'GANHE ATÉ x5000! • 5 PARA GANHAR' : 'GANHE ATÉ x5000! • 5 PARA GANHAR'}</span>
           )}
         </div>
 
+        {/* Bet bar */}
         <div className="h-8 bg-[#1a0f2e] border-b flex items-center justify-between px-2 shrink-0" style={{ borderColor: `${game.secondaryColor}55` }}>
           <div className="flex items-center gap-2 text-[11px] font-black">
             <span className="w-6 h-6 rounded-full bg-[#2a0f4a] border border-white/10 flex items-center justify-center text-white text-xs">🌎</span>
@@ -408,23 +352,29 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
           </div>
         </div>
 
+        {/* Bottom control — mesma interação para todos, cores por personagem */}
         <div className="h-[26%] min-h-[112px] flex flex-col items-center justify-between py-2 px-3 shrink-0 relative overflow-hidden" style={{ background: bottomBg }}>
           <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-yellow-400 to-transparent opacity-60" />
+          <div className="absolute -left-6 -bottom-6 w-20 h-20 rounded-full bg-yellow-400/10 blur-xl" />
+          <div className="absolute -right-6 -bottom-6 w-20 h-20 rounded-full bg-yellow-400/10 blur-xl" />
+
           <div className="w-full flex items-center justify-between">
-            <button onClick={() => setBetIdx(i => Math.max(0, i - 1))} className="w-8 h-8 rounded-full bg-black/30 border border-white/15 text-white flex items-center justify-center active:scale-90 hover:bg-black/40 transition-colors">
+            <button onClick={() => setBetIdx(i => Math.max(0, i - 1))} className="w-8 h-8 rounded-full bg-black/30 border border-white/15 text-white flex items-center justify-center active:scale-90">
               <Minus className="w-4 h-4" />
             </button>
             <div className="flex items-center gap-2">
               <div className="w-14 h-10 rounded-xl border-2 shadow flex items-center justify-center" style={{ background: '#0a5c2a', borderColor: game.secondaryColor }}>
-                <span className="font-black text-white text-xl drop-shadow">{spinCount}</span>
+                <span className="font-black text-white text-xl">{spinCount}</span>
               </div>
-              <button onClick={() => setBetIdx(i => Math.min(betOptions.length - 1, i + 1))} className="w-8 h-8 rounded-full bg-black/30 border border-white/15 text-white flex items-center justify-center active:scale-90 hover:bg-black/40 transition-colors">
+              <button onClick={() => setBetIdx(i => Math.min(betOptions.length - 1, i + 1))} className="w-8 h-8 rounded-full bg-black/30 border border-white/15 text-white flex items-center justify-center active:scale-90">
                 <Plus className="w-4 h-4" />
               </button>
             </div>
-            <button onClick={() => setTurbo(v => !v)} className={`px-2.5 py-1 rounded-full border text-[10px] font-black transition-colors ${turbo ? 'bg-yellow-400 text-black border-yellow-300 shadow' : 'bg-white/10 text-white/70 border-white/15 hover:bg-white/15'}`}>
-              <Zap className="w-3 h-3 inline -mt-0.5" /> {turbo ? 'TURBO' : 'Rápido'}
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button onClick={() => setTurbo(v => !v)} className={`px-2.5 py-1 rounded-full border text-[10px] font-black ${turbo ? 'bg-yellow-400 text-black border-yellow-300' : 'bg-white/10 text-white/70 border-white/15'}`}>
+                <Zap className="w-3 h-3 inline -mt-0.5" /> {turbo ? 'TURBO' : 'Rápido'}
+              </button>
+            </div>
           </div>
 
           <div className="w-full flex items-center justify-between">
@@ -436,18 +386,18 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
                 className={`relative w-[82px] h-[82px] rounded-full flex items-center justify-center border-[4px] shadow-[0_6px_18px_rgba(0,0,0,0.6)] active:scale-95 transition-all ${spinning ? 'bg-[#1e7a3a] border-[#2ecc71] animate-pulse' : !canSpin ? 'bg-slate-600 border-slate-400' : 'border-[#f1c40f] hover:brightness-110'}`}
                 style={{ background: spinning ? '#1e7a3a' : `linear-gradient(to bottom, ${game.secondaryColor}, ${game.primaryColor})`, borderColor: '#f1c40f' }}
               >
-                <span className="absolute -top-3 left-2 text-lg drop-shadow">{game.symbols[0]?.emoji}</span>
-                <span className="absolute -top-3 right-2 text-lg drop-shadow">{game.symbols[0]?.emoji}</span>
+                <span className="absolute -top-3 left-2 text-lg">{game.symbols[0]?.emoji}</span>
+                <span className="absolute -top-3 right-2 text-lg">{game.symbols[0]?.emoji}</span>
                 <span className="text-3xl">🔄</span>
                 {spinning && <span className="absolute inset-0 rounded-full border-4 border-white/20 animate-spin border-t-white" style={{ animationDuration: '0.7s' }} />}
               </button>
-              <button onClick={() => setAutoSpin(v => !v)} className={`px-3 py-1.5 rounded-full border font-black text-xs transition-colors ${autoSpin ? 'bg-red-500 text-white border-red-400 animate-pulse shadow' : 'bg-white/10 text-white border-white/15 hover:bg-white/15'}`}>
+              <button onClick={() => setAutoSpin(v => !v)} className={`px-3 py-1.5 rounded-full border font-black text-xs ${autoSpin ? 'bg-red-500 text-white border-red-400 animate-pulse' : 'bg-white/10 text-white border-white/15'}`}>
                 {autoSpin ? 'PARAR' : 'Auto'}
               </button>
             </div>
             <div className="flex flex-col items-center gap-1">
               <span className="text-[9px] font-bold text-white/50">WINS</span>
-              <span className="text-xs font-black text-yellow-300 drop-shadow">{lastWin > 0 ? `R$ ${lastWin.toFixed(2).replace('.', ',')}` : '—'}</span>
+              <span className="text-xs font-black text-yellow-300">{lastWin > 0 ? `R$ ${lastWin.toFixed(2).replace('.', ',')}` : '—'}</span>
             </div>
           </div>
 
@@ -458,13 +408,13 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
       </div>
 
       {showBigWin && (
-        <div className="absolute inset-0 bg-gradient-to-b from-amber-500/95 via-yellow-400/95 to-orange-500/95 flex flex-col items-center justify-center text-center p-6 z-30 backdrop-blur-sm">
+        <div className="absolute inset-0 bg-gradient-to-b from-amber-500/95 via-yellow-400/95 to-orange-500/95 flex flex-col items-center justify-center text-center p-6 z-30">
           <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center text-4xl shadow-xl animate-bounce">🎉</div>
           <h3 className="font-black text-[#7c1a1a] text-4xl mt-4 drop-shadow">MEGA GANHO!</h3>
-          <p className="font-black text-[#7c1a1a] mt-2 text-xl">R$ {bigWinAmount.toFixed(2).replace('.', ',')}</p>
+          <p className="font-black text-[#7c1a1a] mt-2">R$ {bigWinAmount.toFixed(2).replace('.', ',')}</p>
           <p className="text-[#7c1a1a]/80 text-xs font-bold mt-1">{game.name} • x{(bigWinAmount / bet).toFixed(1)}</p>
           <div className="mt-4 flex gap-1">
-            {[1,2,3,4,5].map(i => <span key={i} className="w-3 h-3 rounded-full bg-white animate-bounce shadow" style={{ animationDelay: `${i*120}ms` }} />)}
+            {[1,2,3,4,5].map(i => <span key={i} className="w-3 h-3 rounded-full bg-white animate-bounce" style={{ animationDelay: `${i*120}ms` }} />)}
           </div>
           <p className="text-[10px] font-bold tracking-widest text-[#7c1a1a]/60 mt-4">Toque para continuar</p>
         </div>
