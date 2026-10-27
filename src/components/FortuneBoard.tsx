@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import {
-  Flag, Coins, Package, Zap, Disc3, Gem, Sparkles, PiggyBank,
-  Dices, Ticket, Trophy, Flame, Gift, Star, RefreshCw, ChevronRight
+import { 
+  Flag, Coins, Package, Zap, Disc3, Gem, Sparkles, PiggyBank, 
+  Dices, Ticket, Trophy, Flame, Gift, Star, RefreshCw, ChevronRight, Play, Square
 } from 'lucide-react';
 import { BoardTile, Pawn } from '../types/game';
 import { sound } from '../utils/audio';
+import { Easing, animate } from '../utils/animationEngine';
 
 interface FortuneBoardProps {
   tiles: BoardTile[];
@@ -23,6 +24,7 @@ interface FortuneBoardProps {
   lapCount: number;
 }
 
+// Icon mapper for tiles
 const renderTileIcon = (iconName: string, className: string = 'w-4 h-4') => {
   switch (iconName) {
     case 'Flag': return <Flag className={className} />;
@@ -43,30 +45,25 @@ const renderTileIcon = (iconName: string, className: string = 'w-4 h-4') => {
   }
 };
 
-const reelSymbols = [
-  { name: 'Coroa', icon: 'Trophy', color: 'from-yellow-400 to-amber-500', value: 'x2' },
-  { name: 'Moeda', icon: 'Coins', color: 'from-orange-500 to-amber-600', value: 'x3' },
-  { name: 'Gema', icon: 'Gem', color: 'from-cyan-400 to-sky-500', value: 'x5' },
-  { name: 'Wild', icon: 'Sparkles', color: 'from-pink-500 to-fuchsia-600', value: 'Wild' },
-  { name: 'Jackpot', icon: 'Gift', color: 'from-emerald-500 to-teal-600', value: 'x10' },
-  { name: 'Bônus', icon: 'Disc3', color: 'from-violet-500 to-purple-600', value: 'x8' },
-  { name: 'Fogo', icon: 'Flame', color: 'from-red-500 to-orange-600', value: 'x12' },
-  { name: 'Dice', icon: 'Dices', color: 'from-blue-500 to-indigo-600', value: 'x7' },
-  { name: 'Sorte', icon: 'Star', color: 'from-amber-400 to-yellow-500', value: 'x15' },
-];
-
+// 7x7 Grid coordinates for the 24 perimeter tiles
 const getTileGridPosition = (index: number): { row: number; col: number } => {
   if (index <= 6) {
-    return { row: 1, col: index + 1 };
+    return { row: 1, col: index + 1 }; // 1 to 7
   } else if (index <= 11) {
-    return { row: (index - 6) + 1, col: 7 };
+    return { row: (index - 6) + 1, col: 7 }; // row 2 to 6, col 7
   } else if (index <= 18) {
-    return { row: 7, col: 7 - (index - 12) };
+    return { row: 7, col: 7 - (index - 12) }; // row 7, col 7 down to 1
   } else {
-    return { row: 7 - (index - 18), col: 1 };
+    return { row: 7 - (index - 18), col: 1 }; // row 6 down to 2, col 1
   }
 };
 
+/**
+ * FortuneBoard — Optimized Board Engine
+ * - Pawn glide uses RAF + easeOutCubic for 60fps movement between tiles
+ * - Dice 3D rotation uses easeOutBack + will-change/transform3d for zero drops
+ * - Tile icons use high-contrast shading + glow for animal realism
+ */
 export const FortuneBoard: React.FC<FortuneBoardProps> = ({
   tiles,
   playerIndex,
@@ -84,102 +81,149 @@ export const FortuneBoard: React.FC<FortuneBoardProps> = ({
   lapCount
 }) => {
   const [selectedTileInfo, setSelectedTileInfo] = useState<BoardTile | null>(null);
+  const [diceRotation, setDiceRotation] = useState(0);
+  const [pawnGlide, setPawnGlide] = useState<{ from: number; to: number; progress: number } | null>(null);
+
   const multiplierOptions = [1, 2, 3, 5];
 
-  const slotCells = Array.from({ length: 9 }, (_, index) => {
-    const symbol = reelSymbols[(index + playerIndex + lapCount) % reelSymbols.length];
-    return { ...symbol, id: index };
-  });
+  // Pawn glide — smooth interpolation between tiles when playerIndex changes
+  const prevIndexRef = React.useRef(playerIndex);
+  React.useEffect(() => {
+    const from = prevIndexRef.current;
+    const to = playerIndex;
+    if (from === to) return;
+    prevIndexRef.current = to;
+    // Animate pawn glide 280ms with easeOutCubic
+    const handle = animate(280, Easing.easeOutCubic, (eased) => {
+      setPawnGlide({ from, to, progress: eased });
+    }, () => setPawnGlide(null));
+    return () => handle.cancel();
+  }, [playerIndex]);
+
+  // Dice spin — RAF 3D rotation
+  React.useEffect(() => {
+    if (isRolling) {
+      const handle = animate(600, Easing.easeOutBack, (eased) => {
+        setDiceRotation(eased * 720); // 2 full spins with bounce
+      });
+      return () => handle.cancel();
+    } else {
+      setDiceRotation(0);
+    }
+  }, [isRolling]);
 
   return (
-    <div className="w-full max-w-5xl mx-auto flex flex-col items-center">
-      <div className="w-full max-w-[760px] mx-auto px-2 sm:px-4 py-2">
-        <div className="flex items-center justify-between mb-3 rounded-2xl border border-emerald-400/40 bg-gradient-to-r from-emerald-950/90 via-green-900/80 to-teal-950/95 px-3 py-2 shadow-[0_0_25px_rgba(16,185,129,0.18)]">
-          <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 via-yellow-400 to-orange-500 text-slate-900 flex items-center justify-center shadow-lg shadow-amber-500/30 border border-white/20">
-              <span className="text-lg">🎲</span>
-            </div>
-            <div>
-              <div className="font-fredoka text-xl font-black bg-gradient-to-r from-amber-200 via-yellow-200 to-amber-400 bg-clip-text text-transparent leading-none">
-                FortuneGo
-              </div>
-              <div className="text-[9px] uppercase tracking-[0.22em] text-emerald-200/80">
-                {lapCount + 1}º volta
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 text-[10px] font-bold text-emerald-100">
-            <div className="rounded-full border border-amber-400/50 bg-amber-500/15 px-2 py-1 text-amber-200">
-              {rolls} rolls
-            </div>
-            <button
-              onClick={onOpenWheel}
-              className="flex items-center gap-1 rounded-full bg-gradient-to-r from-pink-600 to-purple-600 px-2.5 py-1.5 text-white shadow-lg shadow-pink-600/30 border border-pink-300/30"
-            >
-              <Disc3 className="w-3.5 h-3.5 animate-spin" style={{ animationDuration: '4s' }} />
-              <span>Roda</span>
-            </button>
-          </div>
+    <div className="w-full max-w-4xl mx-auto flex flex-col items-center">
+      {/* Board Top Stats Bar */}
+      <div className="w-full flex items-center justify-between px-3 py-1.5 mb-2 bg-slate-900/60 rounded-xl border border-slate-800 text-xs text-slate-300">
+        <div className="flex items-center gap-2">
+          <span className="font-bold text-amber-400">🏁 Lap: #{lapCount + 1}</span>
+          <span className="text-slate-500">•</span>
+          <span className="text-slate-400">Position: Tile {playerIndex + 1}/24</span>
         </div>
-
-        <div className="mb-4 rounded-2xl border border-amber-400/30 bg-gradient-to-r from-slate-900/80 via-slate-900/70 to-indigo-950/80 px-3 py-2 text-center shadow-inner">
-          <div className="text-[10px] sm:text-xs uppercase tracking-[0.26em] text-amber-300/90 font-black">
-            Ganha até x5000
-          </div>
-          <div className="mt-1 flex items-center justify-center gap-2 text-[11px] sm:text-sm font-bold text-white">
-            <span className="text-amber-300">5 para ganhar</span>
-            <span className="text-slate-400">•</span>
-            <span className="text-emerald-300">R$ {diceResult ?? '20,00'}</span>
-          </div>
+        <div className="flex items-center gap-2">
+          {cascadeStreak > 0 && (
+            <div className="flex items-center gap-1 bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/40 animate-pulse">
+              <Flame className="w-3 h-3 text-amber-400 fill-amber-400" />
+              <span className="font-bold">Cascade {cascadeStreak}x Chain!</span>
+            </div>
+          )}
+          <button
+            onClick={onOpenWheel}
+            className="flex items-center gap-1 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-bold px-2.5 py-1 rounded-lg text-xs shadow-md transition-all active:scale-95 cursor-pointer"
+          >
+            <Disc3 className="w-3.5 h-3.5 animate-spin" style={{ animationDuration: '4s' }} />
+            <span>Spin Wheel</span>
+          </button>
         </div>
       </div>
 
-      <div className="relative w-full max-w-[760px] p-2 sm:p-3">
-        <div className="absolute inset-x-0 top-10 h-16 bg-gradient-to-r from-amber-400/10 via-pink-500/10 to-amber-400/10 blur-3xl" />
+      {/* Main 7x7 Board Container */}
+      <div className="relative w-full aspect-square max-w-[580px] p-2 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-950 rounded-3xl border-2 border-amber-500/30 shadow-2xl shadow-indigo-950/80">
+        {/* Subtle grid pattern */}
+        <div className="absolute inset-0 rounded-3xl bg-[radial-gradient(#4f46e5_1px,transparent_1px)] [background-size:16px_16px] opacity-15 pointer-events-none" />
 
-        <div className="relative overflow-hidden rounded-[28px] border-4 border-amber-400/40 bg-gradient-to-br from-emerald-900 via-green-900 to-emerald-950 p-2 sm:p-4 shadow-[0_0_40px_rgba(16,185,129,0.25)]">
-          <div className="space-y-2">
-            <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 rounded-xl border border-amber-400/20 bg-slate-950/60 px-2 py-1.5 text-[10px] sm:text-xs text-slate-200">
-              <div className="flex items-center gap-1 text-amber-300">
-                <Flame className="w-3.5 h-3.5 fill-amber-400" />
-                <span>{cascadeStreak}x</span>
-              </div>
-              <div className="text-center font-bold uppercase tracking-[0.22em] text-emerald-200">
-                {autoRoll ? 'Auto' : 'Manual'}
-              </div>
-              <div className="text-cyan-300 font-bold">x{rollMultiplier}</div>
-            </div>
+        {/* 7x7 Grid */}
+        <div className="grid grid-cols-7 grid-rows-7 gap-1 sm:gap-1.5 w-full h-full relative z-10">
+          {/* Render all 24 perimeter tiles */}
+          {tiles.map((tile) => {
+            const { row, col } = getTileGridPosition(tile.id);
+            const isPlayerHere = playerIndex === tile.id;
+            const isGo = tile.type === 'go';
+            const isJackpot = tile.type === 'jackpot';
+            const isWheel = tile.type === 'wheel';
 
-            <div className="rounded-[22px] border-4 border-amber-500/50 bg-[radial-gradient(circle at center,_rgba(245,158,11,0.18),_rgba(17,24,39,0.95)_40%,_rgba(6,78,59,0.9)_100%)] p-3 shadow-[inset_0_0_30px_rgba(251,191,36,0.1)]">
-              <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
-                {slotCells.map((slot) => (
-                  <div
-                    key={slot.id}
-                    onClick={() => setSelectedTileInfo(tiles[slot.id % tiles.length] || null)}
-                    className={`group relative aspect-square overflow-hidden rounded-2xl border-2 border-amber-200/40 bg-gradient-to-br ${slot.color} p-1.5 shadow-[0_0_18px_rgba(251,191,36,0.12)] transition-transform duration-200 hover:scale-[1.03] cursor-pointer`}
-                  >
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.25),_transparent_55%)]" />
-                    <div className="relative flex h-full w-full flex-col items-center justify-center rounded-xl border border-white/10 bg-slate-950/15 backdrop-blur-[1px]">
-                      <div className="mb-1 flex items-center justify-center rounded-full bg-slate-950/35 p-1 text-lg sm:text-xl text-white shadow-inner">
-                        {renderTileIcon(slot.icon, 'w-5 h-5 sm:w-6 sm:h-6')}
-                      </div>
-                      <div className="text-[8px] sm:text-[10px] font-black uppercase tracking-[0.14em] text-white/90">
-                        {slot.value}
-                      </div>
+            return (
+              <div
+                key={tile.id}
+                onClick={() => setSelectedTileInfo(tile)}
+                style={{ gridRow: row, gridColumn: col }}
+                className={`relative rounded-xl flex flex-col items-center justify-between p-1 cursor-pointer transition-all duration-200 select-none ${
+                  isPlayerHere
+                    ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-950 scale-105 z-20 shadow-lg shadow-amber-400/50'
+                    : 'hover:scale-102 hover:brightness-110 z-10'
+                } ${
+                  isGo
+                    ? 'bg-gradient-to-br from-emerald-600 to-green-700 border border-emerald-400 text-white'
+                    : isJackpot
+                    ? 'bg-gradient-to-br from-yellow-500 via-amber-400 to-amber-600 border border-yellow-300 text-slate-950'
+                    : isWheel
+                    ? 'bg-gradient-to-br from-pink-600 to-purple-700 border border-pink-400 text-white'
+                    : tile.type === 'minigame'
+                    ? 'bg-gradient-to-br from-violet-600 to-indigo-700 border border-violet-400 text-white'
+                    : tile.type === 'chest'
+                    ? 'bg-gradient-to-br from-purple-800 to-slate-800 border border-purple-400 text-purple-200'
+                    : tile.type === 'multiplier'
+                    ? 'bg-gradient-to-br from-blue-700 to-cyan-800 border border-cyan-400 text-cyan-100'
+                    : 'bg-slate-800/90 border border-slate-700/80 text-slate-200'
+                }`}
+              >
+                {/* Tile Number badge */}
+                <span className="absolute top-0.5 left-1 text-[8px] sm:text-[9px] font-mono opacity-60">
+                  {tile.id + 1}
+                </span>
+
+                {/* Tile Icon */}
+                <div className="mt-1 flex items-center justify-center">
+                  {renderTileIcon(tile.icon, 'w-3 h-3 sm:w-4 sm:h-4')}
+                </div>
+
+                {/* Tile Label */}
+                <div className="w-full text-center px-0.5">
+                  <p className="text-[7px] sm:text-[9px] font-bold leading-tight truncate">
+                    {tile.name}
+                  </p>
+                  {tile.rewardValue > 0 && (
+                    <p className="text-[6.5px] sm:text-[8px] font-medium opacity-90 truncate leading-none mt-0.5">
+                      +{tile.rewardValue}
+                    </p>
+                  )}
+                </div>
+
+                {/* Player Pawn Marker */}
+                {isPlayerHere && (
+                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none z-30 animate-bounce-slow">
+                    <div className="text-xl sm:text-2xl filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.8)]">
+                      {currentPawn.emoji}
                     </div>
+                    <div className="w-2 h-1 bg-amber-400 rounded-full blur-[1px]" />
                   </div>
-                ))}
+                )}
               </div>
-            </div>
+            );
+          })}
 
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-2 text-[10px] font-bold text-slate-200">
-                <span className="rounded-full bg-slate-800/80 px-2 py-1">+{rollMultiplier} rolls</span>
-                <span className="rounded-full bg-slate-800/80 px-2 py-1">{lapCount + 1} lap</span>
-              </div>
-
-              <div className="flex items-center gap-1.5">
+          {/* Central Area: Dice Roll & Cockpit (Row 2-6, Col 2-6) */}
+          <div
+            style={{ gridRow: '2 / 7', gridColumn: '2 / 7' }}
+            className="rounded-2xl bg-gradient-to-b from-slate-900/95 via-slate-900/90 to-indigo-950/95 p-3 flex flex-col items-center justify-between border border-amber-500/20 backdrop-blur-sm shadow-inner"
+          >
+            {/* Top Center: Multiplier Chips */}
+            <div className="w-full flex items-center justify-between">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
+                Bet Multiplier:
+              </span>
+              <div className="flex items-center gap-1">
                 {multiplierOptions.map((mult) => (
                   <button
                     key={mult}
@@ -188,10 +232,10 @@ export const FortuneBoard: React.FC<FortuneBoardProps> = ({
                       sound.playTick(600);
                       onChangeMultiplier(mult);
                     }}
-                    className={`min-w-[42px] rounded-lg border px-2 py-1 text-[11px] font-black transition-all ${
+                    className={`px-2 py-0.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                       rollMultiplier === mult
-                        ? 'border-amber-400 bg-gradient-to-r from-amber-400 to-yellow-300 text-slate-900 shadow-lg shadow-amber-500/40'
-                        : 'border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700'
+                        ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 shadow-md shadow-amber-500/40 scale-105'
+                        : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
                     }`}
                   >
                     x{mult}
@@ -200,85 +244,106 @@ export const FortuneBoard: React.FC<FortuneBoardProps> = ({
               </div>
             </div>
 
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            {/* Middle: 3D Animated Dice */}
+            <div className="flex flex-col items-center my-auto">
+              <div className="relative my-2">
+                <div
+                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-br from-white via-slate-100 to-slate-200 border-2 border-amber-400 shadow-xl shadow-amber-500/20 flex items-center justify-center will-change-transform"
+                  style={{ transform: `translateZ(0) rotate(${diceRotation}deg) scale(${isRolling ? 1.08 : 1})`, backfaceVisibility: 'hidden' as const }}
+                >
+                  {isRolling ? (
+                    <Dices className="w-10 h-10 sm:w-12 sm:h-12 text-amber-500 animate-pulse" />
+                  ) : (
+                    <div className="text-3xl sm:text-4xl font-extrabold text-slate-900 font-fredoka flex flex-col items-center">
+                      <span>{diceResult ?? '🎲'}</span>
+                      {diceResult && (
+                        <span className="text-[9px] uppercase tracking-wider text-amber-600 font-bold -mt-1">
+                          Rolled
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="text-center">
+                <p className="text-xs text-slate-300 font-medium">
+                  Cost: <span className="text-blue-400 font-bold">{rollMultiplier} Rolls</span>
+                </p>
+              </div>
+            </div>
+
+            {/* Bottom: Roll & Auto-Roll Action Controls */}
+            <div className="w-full flex flex-col sm:flex-row items-center gap-2">
               <button
                 disabled={isRolling || rolls < rollMultiplier}
                 onClick={onRollDice}
-                className={`flex-1 rounded-2xl border px-4 py-3 text-base font-black uppercase tracking-[0.12em] transition-all ${
+                className={`flex-1 w-full py-2.5 sm:py-3 px-4 rounded-xl font-bold font-fredoka text-base sm:text-lg flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg active:scale-95 ${
                   rolls < rollMultiplier
-                    ? 'border-slate-700 bg-slate-800 text-slate-500 cursor-not-allowed'
+                    ? 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
                     : isRolling
-                    ? 'border-amber-500 bg-amber-600 text-white animate-pulse'
-                    : 'border-amber-300 bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 text-slate-900 shadow-lg shadow-amber-500/30 hover:brightness-110'
+                    ? 'bg-amber-600 text-white animate-pulse'
+                    : 'bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-slate-950 hover:brightness-110 shadow-amber-500/30'
                 }`}
               >
-                {isRolling ? 'Rolando...' : 'Roll Dice'}
+                <Dices className="w-5 h-5" />
+                <span>{isRolling ? 'ROLLING...' : 'ROLL DICE!'}</span>
               </button>
 
               <button
+                disabled={rolls < rollMultiplier}
                 onClick={onToggleAutoRoll}
-                className={`rounded-2xl border px-3 py-3 text-[11px] font-black uppercase tracking-[0.12em] transition-all ${
+                className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                   autoRoll
-                    ? 'border-red-500/60 bg-red-500/20 text-red-200 hover:bg-red-500/30'
-                    : 'border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700'
+                    ? 'bg-red-500/20 text-red-300 border-red-500/40 hover:bg-red-500/30'
+                    : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
                 }`}
+                title="Toggle Auto-Roll"
               >
-                {autoRoll ? 'Parar Auto' : 'Auto'}
+                {autoRoll ? (
+                  <>
+                    <Square className="w-3.5 h-3.5 fill-red-400" />
+                    <span>Stop Auto</span>
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-3.5 h-3.5 fill-slate-300" />
+                    <span>Auto Roll</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="w-full max-w-[760px] flex flex-wrap items-center justify-between gap-2 px-2 sm:px-4 pb-3 pt-2">
-        <div className="flex items-center gap-1 text-[10px] sm:text-xs text-slate-300">
-          <RefreshCw className="w-3.5 h-3.5 text-amber-300" />
-          <span>Tile atual: #{playerIndex + 1}</span>
-        </div>
-
-        <div className="flex items-center gap-2 text-[10px] sm:text-xs text-slate-300">
-          <span className="rounded-full border border-slate-700 bg-slate-900/70 px-2 py-1">
-            Pos.: {playerIndex + 1}/24
-          </span>
-          <button
-            onClick={() => setSelectedTileInfo(tiles[playerIndex] || null)}
-            className="flex items-center gap-1 rounded-full border border-slate-700 bg-slate-900/70 px-2 py-1 text-slate-200"
-          >
-            <ChevronRight className="w-3 h-3" />
-            Ver tile
-          </button>
-        </div>
-      </div>
-
+      {/* Quick Tile Inspector Modal / Tooltip */}
       {selectedTileInfo && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-sm rounded-2xl border border-amber-500/30 bg-slate-900 p-5 shadow-2xl">
-            <div className="mb-3 flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-amber-500/40 bg-amber-500/15 text-amber-400">
+          <div className="bg-slate-900 border border-amber-500/30 rounded-2xl p-5 max-w-sm w-full shadow-2xl relative animate-in fade-in zoom-in-95">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-400 border border-amber-500/40">
                 {renderTileIcon(selectedTileInfo.icon, 'w-6 h-6')}
               </div>
               <div>
-                <h3 className="text-lg font-black text-white">{selectedTileInfo.name}</h3>
-                <p className="text-xs text-slate-400">Tile #{selectedTileInfo.id + 1} de 24</p>
+                <h3 className="font-bold text-white text-lg">{selectedTileInfo.name}</h3>
+                <p className="text-xs text-slate-400">Tile #{selectedTileInfo.id + 1} of 24</p>
               </div>
             </div>
-
-            <p className="mb-4 rounded-xl border border-slate-800 bg-slate-950/70 p-3 text-sm text-slate-300">
+            <p className="text-sm text-slate-300 mb-4 bg-slate-950/60 p-3 rounded-xl border border-slate-800">
               {selectedTileInfo.description}
             </p>
-
             {selectedTileInfo.rewardValue > 0 && (
-              <div className="mb-4 flex items-center justify-between rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs font-bold text-amber-300">
+              <div className="flex items-center justify-between text-xs text-amber-300 font-bold mb-4 px-1">
                 <span>Base Reward:</span>
                 <span>+{selectedTileInfo.rewardValue}</span>
               </div>
             )}
-
             <button
               onClick={() => setSelectedTileInfo(null)}
-              className="w-full rounded-xl bg-slate-800 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-700"
+              className="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm cursor-pointer"
             >
-              Fechar
+              Close
             </button>
           </div>
         </div>

@@ -1,10 +1,35 @@
 @import "tailwindcss";
 
+@theme {
+  --color-casino-green: #164633;
+  --color-casino-green-dark: #0f2e22;
+  --color-casino-green-light: #1a5c3a;
+  --color-casino-gold: #FFD700;
+  --color-casino-gold-light: #FFEC8B;
+  --color-casino-accent: #194C38;
+}
+
 @layer base {
   body {
     font-family: 'Outfit', sans-serif;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
+    background: #0a1f15;
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #1a5c3a #0a1f15;
+  }
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: #1a5c3a;
+    border-radius: 999px;
+  }
+  *::-webkit-scrollbar-track {
+    background: #0a1f15;
   }
 }
 
@@ -12,6 +37,7 @@
   font-family: 'Fredoka', cursive, sans-serif;
 }
 
+/* FortuneGo-inspired animations */
 @keyframes pulse-glow {
   0%, 100% {
     box-shadow: 0 0 15px rgba(245, 158, 11, 0.4), inset 0 0 10px rgba(245, 158, 11, 0.2);
@@ -20,35 +46,77 @@
     box-shadow: 0 0 30px rgba(245, 158, 11, 0.8), inset 0 0 20px rgba(245, 158, 11, 0.5);
   }
 }
-
 .animate-pulse-glow {
   animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 @keyframes bounce-slow {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-6px);
-  }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
 }
-
 .animate-bounce-slow {
   animation: bounce-slow 1.6s ease-in-out infinite;
 }
 
 @keyframes coin-float {
-  0% {
-    transform: translateY(0) scale(1);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(-60px) scale(1.2);
-    opacity: 0;
-  }
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-60px) scale(1.2); opacity: 0; }
 }
-
 .animate-coin-float {
   animation: coin-float 1.2s ease-out forwards;
+}
+
+@keyframes reel-spin {
+  0% { transform: translateY(-100%); opacity: 0.5; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+.animate-reel-spin {
+  animation: reel-spin 0.15s ease-out;
+}
+
+@keyframes win-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); }
+  50% { transform: scale(1.08); box-shadow: 0 0 20px 4px rgba(255, 215, 0, 0.9); }
+}
+.animate-win-pulse {
+  animation: win-pulse 0.6s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+.animate-shimmer {
+  animation: shimmer 2.5s infinite;
+}
+
+@keyframes jackpot-ticker {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-jackpot-ticker {
+  animation: jackpot-ticker 18s linear infinite;
+}
+
+@keyframes tab-glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(26, 92, 58, 0.5); }
+  50% { box-shadow: 0 0 16px rgba(26, 92, 58, 0.9); }
+}
+
+/* Hide scrollbar for category tabs but keep scroll */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+
+/* Lobby max width like FortuneGo mobile */
+.lobby-container {
+  max-width: 540px;
+  margin: 0 auto;
+}
+@media (min-width: 768px) {
+  .lobby-container {
+    max-width: 980px;
+  }
 }
