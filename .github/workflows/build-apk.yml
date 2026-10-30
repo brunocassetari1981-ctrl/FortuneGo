@@ -2,7 +2,7 @@ name: Build FortuneGo APK
 
 on:
   push:
-    branches: [ arena/fd516333-fortunego ]
+    branches: [ arena/fd516333-fortunego, arena/6c53608a-fortunego ]
   workflow_dispatch:
 
 jobs:
