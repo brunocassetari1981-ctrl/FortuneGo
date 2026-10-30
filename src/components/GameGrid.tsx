@@ -31,7 +31,7 @@ export const GameGrid: React.FC<GameGridProps> = ({ category, onPlay, onToggleFa
       </div>
 
       {/* Grid — matches FortuneGo list-slide: 3 cols on mobile, 3x? then horizontal scroll on desktop could wrap */}
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
         {games.map(game => (
           <div
             key={game.id}
@@ -58,7 +58,7 @@ export const GameGrid: React.FC<GameGridProps> = ({ category, onPlay, onToggleFa
               <img
                 src={game.thumb}
                 alt={game.name}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                 loading="lazy"
                 onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />

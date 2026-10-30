@@ -79,7 +79,7 @@ export interface SlotSymbol {
   id: string;
   emoji: string;
   name: string;
-  payout: { 3: number; 5?: number };
+  payout: { 3: number };
   isWild?: boolean;
   isScatter?: boolean;
   color: string;
@@ -89,6 +89,7 @@ export interface SlotGameDef {
   id: string;
   name: string;
   provider: string;
+  audio?: string;
   thumb: string;
   banner: string;
   primaryColor: string;

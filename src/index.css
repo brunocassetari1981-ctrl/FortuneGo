@@ -58,6 +58,15 @@
   animation: bounce-slow 1.6s ease-in-out infinite;
 }
 
+@keyframes slot-hero-float {
+  0%, 100% { transform: perspective(700px) rotateY(-7deg) rotateX(5deg) translateZ(24px) translateY(0); }
+  50% { transform: perspective(700px) rotateY(7deg) rotateX(-2deg) translateZ(32px) translateY(-5px); }
+}
+.slot-hero-3d {
+  transform-style: preserve-3d;
+  animation: slot-hero-float 4s ease-in-out infinite;
+}
+
 @keyframes coin-float {
   0% { transform: translateY(0) scale(1); opacity: 1; }
   100% { transform: translateY(-60px) scale(1.2); opacity: 0; }
@@ -88,6 +97,13 @@
 }
 .animate-shimmer {
   animation: shimmer 2.5s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slot-hero-3d,
+  .animate-bounce-slow {
+    animation: none;
+  }
 }
 
 @keyframes jackpot-ticker {

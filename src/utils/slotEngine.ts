@@ -1,5 +1,11 @@
 import { SlotGameDef, SlotSymbol } from '../types/game';
 
+export const SLOT_REEL_COUNT = 3;
+export const SLOT_ROW_COUNT = 3;
+export const SLOT_REEL_ROW_COUNTS = [3, 4, 3] as const;
+export const SLOT_PAYLINE_COUNT = 5;
+export const SLOT_REEL_STRIP_LENGTH = 15;
+
 export interface SlotSpinResult {
   grid: string[][]; // [reel][row] symbolId
   winPaylines: Array<{ payline: number; symbolId: string; count: number; amount: number; positions: [number, number][] }>;
@@ -10,26 +16,16 @@ export interface SlotSpinResult {
   hasScatter: boolean;
 }
 
-// Paylines definitions: horizontal, diagonals, zigzag
-const PAYLINES_5 = [
-  // 5 lines for 3x3
-  [[0,0],[1,0],[2,0]], // top row
-  [[0,1],[1,1],[2,1]], // middle
-  [[0,2],[1,2],[2,2]], // bottom
-  [[0,0],[1,1],[2,2]], // diag \
-  [[0,2],[1,1],[2,0]], // diag /
-];
-const PAYLINES_10 = [
-  ...PAYLINES_5,
-  [[0,0],[1,0],[2,1],[3,1],[4,1]],
-  [[0,2],[1,2],[2,1],[3,1],[4,1]],
-  [[0,1],[1,0],[2,1],[3,2],[4,1]],
-  [[0,1],[1,2],[2,1],[3,0],[4,1]],
-  [[0,0],[1,1],[2,0],[3,1],[4,0]],
+const PAYLINES = [
+  [[0,0],[1,0],[2,0]],
+  [[0,1],[1,1],[2,1]],
+  [[0,2],[1,3],[2,2]],
+  [[0,0],[1,2],[2,2]],
+  [[0,2],[1,2],[2,0]],
 ];
 
 export function generateSpin(game: SlotGameDef, bet: number, forcedWin?: boolean): SlotSpinResult {
-  const { reels, rows, paylines, symbols } = game;
+  const { symbols } = game;
   const grids: string[][] = [];
 
   // Build weighted symbol pools — wild/scatter rarer, low-payout more common
@@ -44,46 +40,24 @@ export function generateSpin(game: SlotGameDef, bet: number, forcedWin?: boolean
     for (let i = 0; i < weight; i++) weighted.push(s);
   });
 
-  // Force win injection for fun (about 28% RTP feel)
+  // Occasionally bias a spin toward a matching pair.
   const shouldWin = forcedWin !== undefined ? forcedWin : Math.random() < 0.34;
 
   // Generate grid with potential win bias
-  for (let r = 0; r < reels; r++) {
+  for (let r = 0; r < SLOT_REEL_COUNT; r++) {
     const col: string[] = [];
-    for (let row = 0; row < rows; row++) {
-      if (shouldWin && row === 1 && r < 3 && Math.random() < 0.55) {
-        // bias middle line to match for win
-        // we leave handling to evaluation
-      }
+    for (let row = 0; row < (SLOT_REEL_ROW_COUNTS[r] ?? SLOT_ROW_COUNT); row++) {
       const pick = weighted[Math.floor(Math.random() * weighted.length)];
       col.push(pick.id);
     }
     grids.push(col);
   }
 
-  // If we want to ensure a win ~40% of wins, force middle line to match
-  if (shouldWin && Math.random() < 0.62) {
-    const winSym = symbols.filter(s => !s.isScatter)[Math.floor(Math.random() * symbols.filter(s => !s.isScatter).length)];
-    // Force middle line to have at least 3 in a row
-    const winCount = Math.random() < 0.15 ? (reels >= 5 ? 5 : 3) : 3; // occasional 5-in-a-row
-    for (let r = 0; r < winCount; r++) {
-      grids[r][Math.floor(rows / 2)] = winSym.id;
-    }
-  }
-
-  // Evaluate paylines
-  const activePaylines = paylines === 5 ? PAYLINES_5 : paylines === 10 ? PAYLINES_10.slice(0, paylines) : PAYLINES_5;
-  // For 5 reels, we need correct payline coords length; but our 3x3 uses 5 lines; for 5 reels adapt
-  let usePaylines = activePaylines;
-  if (reels === 5 && paylines > 5) {
-    // Use generic 5-reel paylines (horizontal middle plus some)
-    usePaylines = Array.from({ length: paylines }, (_, i) => {
-      if (i < PAYLINES_10.length) return PAYLINES_10[i];
-      // fallback to middle line
-      return Array.from({ length: reels }, (_, reel) => [reel, Math.floor(rows/2)] as [number, number]);
-    });
-  } else if (reels === 3) {
-    usePaylines = PAYLINES_5.slice(0, Math.min(paylines, 5));
+  if (shouldWin && (forcedWin === true || Math.random() < 0.62)) {
+    const regularSymbols = symbols.filter(s => !s.isScatter);
+    const winSym = regularSymbols[Math.floor(Math.random() * regularSymbols.length)];
+    const winningLine = PAYLINES[Math.floor(Math.random() * PAYLINES.length)];
+    winningLine?.forEach(([reel, row]) => { grids[reel][row] = winSym.id; });
   }
 
   const winPaylines: SlotSpinResult['winPaylines'] = [];
@@ -100,20 +74,19 @@ export function generateSpin(game: SlotGameDef, bet: number, forcedWin?: boolean
   }));
 
   // Evaluate each payline
-  for (let pi = 0; pi < usePaylines.length; pi++) {
-    const line = usePaylines[pi];
+  for (let pi = 0; pi < PAYLINES.length; pi++) {
+    const line = PAYLINES[pi];
     if (!line) continue;
     // Build symbol sequence along payline
     const seq: string[] = line.map(([reel, row]) => grids[reel]?.[row]).filter(Boolean) as string[];
-    if (seq.length < 3) continue;
+    if (seq.length < SLOT_REEL_COUNT) continue;
 
     // Find first non-wild to determine symbol to match
     let targetId: string | null = null;
-    let wildCountPrefix = 0;
     for (const sid of seq) {
       const sym = symbols.find(s => s.id === sid);
       if (!sym) continue;
-      if (sym.isWild) { wildCountPrefix++; continue; }
+      if (sym.isWild) continue;
       targetId = sid;
       break;
     }
@@ -138,21 +111,15 @@ export function generateSpin(game: SlotGameDef, bet: number, forcedWin?: boolean
       } else break;
     }
 
-    // Need at least 3 consecutive
-    if (count >= 3) {
+    if (count >= SLOT_REEL_COUNT) {
       const basePayout = targetSym.payout[3] || 5;
-      // For 5-reel games, 4 or 5 in a row pays more
-      let payoutMult = basePayout;
-      if (count === 4 && targetSym.payout[5]) payoutMult = targetSym.payout[5]! * 0.4;
-      if (count === 5 && targetSym.payout[5]) payoutMult = targetSym.payout[5]!;
-
       // Wild multiplier
       let wildMult = 1;
       // If line contains wild, boost
       const lineHasWild = seq.slice(0, count).some(sid => symbols.find(s => s.id === sid)?.isWild);
       if (lineHasWild) wildMult = 2;
 
-      const amount = Math.floor(bet * payoutMult * wildMult * (count === 5 ? 1.5 : count === 4 ? 1.2 : 1));
+      const amount = Math.floor(bet * basePayout * wildMult);
       if (amount > 0) {
         winPaylines.push({ payline: pi, symbolId: targetId, count, amount, positions });
         totalWin += amount;

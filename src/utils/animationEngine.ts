@@ -2,7 +2,7 @@
  * FortuneGo Animation Engine — High-performance RAF-based animation core
  * 
  * Provides deterministic, frame-rate independent animations for:
- * - Slot reels (three rectangles)
+ * - Slot reel tracks beside the fixed central prize ladder
  * - Roulette wheel (Rainbow Fortune Wheel)
  * - Board dice / pawn movement
  * 

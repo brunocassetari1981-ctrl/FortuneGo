@@ -193,7 +193,7 @@ class SoundManager {
 
   // === Música de fundo oriental / festiva ===
 
-  public playBackground(gameId?: string) {
+  public playBackground() {
     if (!this.enabled) return;
     this.stopBackground();
     try {
@@ -213,7 +213,7 @@ class SoundManager {
         if (!this.ctx || !this.bgGain) return;
         const now = ctx.currentTime;
         // melodia
-        const freq = baseMelody[step % baseMelody.length] * (gameId?.includes('rabbit') ? 1 : gameId?.includes('tiger') ? 1.12 : 0.95);
+        const freq = baseMelody[step % baseMelody.length];
         const osc = ctx.createOscillator();
         const g = ctx.createGain();
         osc.type = 'triangle';
@@ -253,9 +253,15 @@ class SoundManager {
 
   public stopBackground() {
     if (this.bgTimer) { clearInterval(this.bgTimer); this.bgTimer = null; }
-    if (this.bgGain && this.ctx) {
-      try { this.bgGain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.25); } catch {}
-      setTimeout(() => { this.bgGain?.disconnect(); this.bgOscs.forEach(o => { try { o.stop(); o.disconnect(); } catch {} }); this.bgOscs = []; this.bgGain = null; }, 300);
+    const previousGain = this.bgGain;
+    this.bgGain = null;
+    if (previousGain && this.ctx) {
+      try { previousGain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.25); } catch {}
+      setTimeout(() => {
+        previousGain.disconnect();
+        this.bgOscs.forEach(o => { try { o.stop(); o.disconnect(); } catch {} });
+        this.bgOscs = [];
+      }, 300);
     }
   }
 
