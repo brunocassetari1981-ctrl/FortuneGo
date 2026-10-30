@@ -265,17 +265,7 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
 
           {/* Center reels */}
           <div className="relative z-10 w-[74%] max-w-[300px] h-[88%] rounded-xl border-2 overflow-hidden shadow-inner flex" style={{ borderColor: game.secondaryColor, background: 'linear-gradient(to bottom, #143a6b, #0a1f3a)' }}>
-            {/* Paytable column — para Fortune 3x3, mantém igual para todos */}
-            {isSmallGrid && (
-              <div className="w-[26%] border-r-2 flex flex-col items-center justify-around py-2 shrink-0" style={{ background: `linear-gradient(to bottom, ${game.secondaryColor}, ${game.primaryColor})`, borderColor: game.primaryColor }}>
-                {paytable.map((v, i) => (
-                  <div key={i} className="flex flex-col items-center">
-                    <span className="text-[10px] font-black leading-none" style={{ color: '#fff' }}>{v.toLocaleString('pt-BR')}</span>
-                    {i < paytable.length - 1 && <div className="w-8 h-0.5 bg-black/20 mt-1" />}
-                  </div>
-                ))}
-              </div>
-            )}
+            {/* Paytable removido — mantém sem coluna lateral para bater com localhost:3000 (todos jogos com top 250/10/2,50/0,25) */}
 
             <div className={`flex-1 grid ${game.reels === 3 ? 'grid-cols-3' : 'grid-cols-5'} gap-0 h-full`}>
               {Array.from({ length: game.reels }).map((_, reelIdx) => (
