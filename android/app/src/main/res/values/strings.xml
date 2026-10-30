@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">FortuneGo</string>
+    <string name="title_activity_main">FortuneGo</string>
+    <string name="package_name">com.fortunego.app</string>
+    <string name="custom_url_scheme">com.fortunego.app</string>
+</resources>

@@ -1,0 +1,6 @@
+{
+    "editor.inlineSuggest.enabled": true,
+    "dictation.experimental.llmCleanupModel": "copilot-utility-small",
+    "chat.agent.sandbox.enabled": "on",
+    "claudeCode.useTerminal": true
+}

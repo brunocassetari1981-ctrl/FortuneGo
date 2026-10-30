@@ -1,0 +1,18 @@
+{
+  "name": "FortuneGo",
+  "short_name": "FortuneGo",
+  "description": "FortuneGo — Fortune Tiger, Rabbit, Dragon e Jackpot progressivo!",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a1f15",
+  "theme_color": "#164633",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23F59E0B'><circle cx='12' cy='12' r='10'/></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
