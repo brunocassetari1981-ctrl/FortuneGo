@@ -100,7 +100,7 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
       setTimeout(() => {
         setReelOffsets(prev => {
           const n = [...prev];
-          n[idx] = -120;
+          n[idx] = -320;
           return n;
         });
       }, delay);
@@ -284,9 +284,9 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
                     className="flex flex-col transition-transform will-change-transform"
                     style={{
                       transform: `translateY(${reelOffsets[reelIdx] || 0}px)`,
-                      transitionDuration: spinning ? '180ms' : '420ms',
-                      transitionTimingFunction: spinning ? 'linear' : 'cubic-bezier(0.22,1,0.36,1)',
-                      filter: spinning ? 'blur(0.7px) brightness(1.1)' : 'blur(0)',
+                      transitionDuration: spinning ? '520ms' : '580ms',
+                      transitionTimingFunction: spinning ? 'cubic-bezier(0.55,0,1,0.45)' : 'cubic-bezier(0.22,1,0.36,1)',
+                      filter: spinning ? 'blur(1.1px) brightness(1.12)' : 'blur(0)',
                     }}
                   >
                     {(grid[reelIdx] || Array.from({ length: game.rows }, () => game.symbols[0].id)).map((symId, rowIdx) => {
