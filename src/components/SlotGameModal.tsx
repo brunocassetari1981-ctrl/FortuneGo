@@ -219,8 +219,8 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
           </button>
         </div>
 
-        {/* Shared three-reel cabinet with the same paytable and controls in every slot. */}
-        <div className="flex-1 bg-[#0b1220] relative flex items-center justify-center p-1 overflow-visible">
+        {/* Shared three-reel cabinet - só rolo central visível (paytable e banner removidos) */}
+        <div className="flex-1 bg-[#0b1220] relative flex items-center justify-center p-1 pt-2 pb-3 overflow-visible">
           {/* Left payline */}
           <div className="absolute left-0 top-10 bottom-10 w-7 border-y-4 border-r-4 rounded-r-xl flex flex-col items-center justify-around py-2 font-black shadow-lg z-10" style={{ backgroundColor: game.primaryColor, borderColor: game.secondaryColor, color: 'white' }}>
             {Array.from({ length: SLOT_PAYLINE_COUNT }, (_, index) => index + 1).map(n => (
@@ -235,18 +235,6 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
           </div>
 
           <div className="relative z-10 flex h-full w-[94%] max-w-[360px] flex-col overflow-visible" style={{ background: 'transparent' }}>
-            <div className="relative z-30 grid h-[14%] min-h-9 shrink-0 grid-cols-4 border-b-2" style={{ background: `linear-gradient(to right, ${game.primaryColor}cc, ${game.secondaryColor}cc, ${game.primaryColor}cc)`, borderColor: game.secondaryColor }}>
-              {paytable.map((value, index) => (
-                <div
-                  key={index}
-                  className={`flex items-center justify-center px-0.5 ${index < paytable.length - 1 ? 'border-r border-black/20' : ''}`}
-                >
-                  <span className="rounded-md border border-white/30 bg-black/20 px-1.5 py-1 text-center text-[clamp(9px,2.4vw,14px)] font-black leading-none text-white shadow">
-                    {value.toLocaleString('pt-BR', { minimumFractionDigits: Number.isInteger(value) ? 0 : 2, maximumFractionDigits: 2 })}
-                  </span>
-                </div>
-              ))}
-            </div>
             <div
               className="relative z-10 grid min-h-0 flex-1 w-full grid-cols-3 self-center overflow-visible"
               style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}
@@ -282,16 +270,7 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
           )}
         </div>
 
-        {/* Banner win — mesma para todos, cor do personagem */}
-        <div className="relative z-30 h-7 border-y-2 flex items-center justify-center shrink-0" style={{ background: `linear-gradient(to right, ${game.primaryColor}, ${game.secondaryColor})`, borderColor: game.secondaryColor }}>
-          <div className="absolute left-2 w-6 h-6 rounded-full border flex items-center justify-center text-xs" style={{ background: '#2a0f4a', borderColor: game.secondaryColor }}>{game.symbols[0]?.emoji}</div>
-          <div className="absolute right-2 w-6 h-6 rounded-full border flex items-center justify-center text-xs" style={{ background: '#2a0f4a', borderColor: game.secondaryColor }}>{game.symbols[0]?.emoji}</div>
-          {lastWin > 0 ? (
-            <span className="font-black text-yellow-200 text-sm tracking-wide animate-pulse">WIN R$ {lastWin.toFixed(2).replace('.', ',')} • x{(lastWin / bet).toFixed(1)}</span>
-          ) : (
-            <span className="font-bold text-white/90 text-xs tracking-widest">ALINHE OS SÍMBOLOS PARA GANHAR</span>
-          )}
-        </div>
+
 
         {/* Bet bar */}
         <div className="h-8 bg-[#1a0f2e] border-b flex items-center justify-between px-2 shrink-0" style={{ borderColor: `${game.secondaryColor}55` }}>
@@ -306,8 +285,8 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
           </div>
         </div>
 
-        {/* Bottom control — mesma interação para todos, cores por personagem */}
-        <div className="relative flex h-[17%] min-h-[100px] shrink-0 flex-col items-center justify-between overflow-hidden px-3 py-1.5" style={{ background: bottomBg }}>
+        {/* Bottom control — baixado até final do rolo central para visão perfeita */}
+        <div className="relative flex h-[14%] min-h-[88px] shrink-0 flex-col items-center justify-between overflow-hidden px-3 py-1.5" style={{ background: bottomBg }}>
           <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-yellow-400 to-transparent opacity-60" />
           <div className="absolute -left-6 -bottom-6 w-20 h-20 rounded-full bg-yellow-400/10 blur-xl" />
           <div className="absolute -right-6 -bottom-6 w-20 h-20 rounded-full bg-yellow-400/10 blur-xl" />
