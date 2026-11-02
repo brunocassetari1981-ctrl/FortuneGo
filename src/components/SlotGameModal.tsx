@@ -288,7 +288,7 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
                 disabled={spinning}
                 onClick={() => setTurbo(v => !v)}
                 aria-label={turbo ? 'Desativar modo turbo' : 'Ativar modo turbo'}
-                className={`flex h-11 w-11 items-center justify-center rounded-full border shadow transition-all duration-200 hover:scale-110 hover:shadow-[0_0_16px_rgba(255,215,0,0.5)] active:scale-95 disabled:opacity-40 ${turbo ? 'border-yellow-200 bg-yellow-400 text-black' : 'border-white/20 bg-black/25 text-white hover:border-white/55'}`}
+                className={`flex h-11 w-11 items-center justify-center rounded-full border-2 shadow transition-all duration-200 hover:scale-110 active:scale-95 disabled:opacity-40 ${turbo ? 'border-yellow-200 bg-gradient-to-b from-yellow-300 to-amber-500 text-black shadow-[0_4px_12px_rgba(234,179,8,0.6)]' : 'border-amber-200/70 bg-gradient-to-b from-zinc-700 to-zinc-800 text-amber-300 hover:border-amber-300 hover:shadow-[0_0_16px_rgba(245,158,11,0.4)]'}`}
                 title={turbo ? 'Desativar modo turbo' : 'Ativar modo turbo'}
               >
                 <Zap className="h-5 w-5" />
@@ -299,7 +299,7 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
                 disabled={spinning}
                 onClick={() => setBetIdx(i => Math.max(0, i - 1))}
                 aria-label="Diminuir aposta"
-                className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-black/30 text-white transition-all duration-200 hover:scale-110 hover:border-yellow-200/70 hover:bg-black/50 hover:shadow-[0_0_16px_rgba(255,215,0,0.4)] active:scale-90 disabled:opacity-40"
+                className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-amber-200 bg-gradient-to-b from-amber-400 via-orange-500 to-orange-600 text-white shadow-[0_4px_12px_rgba(245,158,11,0.5),0_2px_0_rgba(255,255,255,0.4)_inset] transition-all duration-200 hover:scale-110 hover:brightness-110 hover:shadow-[0_0_20px_rgba(245,158,11,0.6)] active:scale-90 disabled:opacity-40"
                 title="Diminuir aposta"
               >
                 <Minus className="h-5 w-5" />
@@ -310,8 +310,8 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
                 onClick={handleSpin}
                 disabled={spinning || !canSpin}
                 aria-label={spinning ? 'Giro em andamento' : 'Girar'}
-                className={`relative flex h-[76px] w-[76px] items-center justify-center rounded-full border-[4px] shadow-[0_6px_18px_rgba(0,0,0,0.6)] transition-all duration-200 active:scale-95 ${spinning ? 'animate-pulse border-[#2ecc71] bg-[#1e7a3a]' : !canSpin ? 'border-slate-400 bg-slate-600' : 'border-[#f1c40f] hover:scale-105 hover:brightness-125 hover:shadow-[0_0_24px_rgba(255,215,0,0.65)]'}`}
-                style={{ background: spinning ? '#1e7a3a' : `linear-gradient(to bottom, ${game.secondaryColor}, ${game.primaryColor})`, borderColor: '#f1c40f' }}
+                className={`relative flex h-[78px] w-[78px] items-center justify-center rounded-full border-[4px] shadow-[0_8px_20px_rgba(0,0,0,0.7)] transition-all duration-200 active:scale-95 ${spinning ? 'animate-pulse border-emerald-300 bg-gradient-to-b from-emerald-400 to-green-700' : !canSpin ? 'border-slate-400 bg-slate-600' : 'border-yellow-200 bg-gradient-to-b from-yellow-300 via-amber-500 to-orange-600 hover:scale-105 hover:brightness-110 hover:shadow-[0_0_28px_rgba(251,191,36,0.8)]'}`}
+                style={{ borderColor: '#fde68a', boxShadow: '0 8px 20px rgba(0,0,0,0.5), 0 0 0 2px rgba(252,211,77,0.4) inset' }}
                 title="Girar"
               >
                 <RotateCw className="h-9 w-9 text-white drop-shadow" />
@@ -323,7 +323,7 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
                 disabled={spinning}
                 onClick={() => setBetIdx(i => Math.min(betOptions.length - 1, i + 1))}
                 aria-label="Aumentar aposta"
-                className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-black/30 text-white transition-all duration-200 hover:scale-110 hover:border-yellow-200/70 hover:bg-black/50 hover:shadow-[0_0_16px_rgba(255,215,0,0.4)] active:scale-90 disabled:opacity-40"
+                className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-amber-200 bg-gradient-to-b from-amber-400 via-orange-500 to-orange-600 text-white shadow-[0_4px_12px_rgba(245,158,11,0.5),0_2px_0_rgba(255,255,255,0.4)_inset] transition-all duration-200 hover:scale-110 hover:brightness-110 hover:shadow-[0_0_20px_rgba(245,158,11,0.6)] active:scale-90 disabled:opacity-40"
                 title="Aumentar aposta"
               >
                 <Plus className="h-5 w-5" />
@@ -333,7 +333,7 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
               <button
                 onClick={() => setAutoSpin(v => !v)}
                 aria-label={autoSpin ? 'Parar giros automáticos' : 'Ativar giros automáticos'}
-                className={`flex h-11 w-11 items-center justify-center rounded-full border transition-all duration-200 hover:scale-110 hover:shadow-[0_0_16px_rgba(255,255,255,0.35)] active:scale-95 ${autoSpin ? 'animate-pulse border-red-300 bg-red-500 text-white' : 'border-white/20 bg-black/25 text-white hover:border-white/55'}`}
+                className={`flex h-11 w-11 items-center justify-center rounded-full border-2 transition-all duration-200 hover:scale-110 active:scale-95 ${autoSpin ? 'animate-pulse border-red-200 bg-gradient-to-b from-red-400 to-red-600 text-white shadow-[0_4px_12px_rgba(239,68,68,0.5)]' : 'border-white/20 bg-gradient-to-b from-zinc-700 to-zinc-800 text-white hover:border-white/40 hover:shadow-[0_0_16px_rgba(255,255,255,0.2)]'}`}
                 title={autoSpin ? 'Parar giros automáticos' : 'Ativar giros automáticos'}
               >
                 <PlayCircle className="h-5 w-5" />
