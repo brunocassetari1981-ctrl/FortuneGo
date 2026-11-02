@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { BANNERS, QUICK_PROMOS } from '../data/slotGames';
+import { BANNERS } from '../data/slotGames';
 
 interface BannerCarouselProps {
   onClaimPromo?: (id: string) => void;
@@ -66,16 +66,7 @@ export const BannerCarousel: React.FC<BannerCarouselProps> = ({ onClaimPromo }) 
         </div>
       </div>
 
-      {/* Quick promo row — 4 tiles like FortuneGo fast entry */}
-      <div className="grid grid-cols-4 gap-2">
-        {QUICK_PROMOS.map(p => (
-          <button key={p.id} onClick={() => onClaimPromo?.(p.id)} className={`relative overflow-hidden rounded-2xl p-2 sm:p-3 border border-white/10 shadow-md active:scale-95 transition-all cursor-pointer bg-gradient-to-br ${p.color} flex flex-col items-center justify-center gap-1 text-center group`}>
-            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <img src={p.img} alt={p.label} className="w-10 h-10 sm:w-12 sm:h-12 object-contain rounded-xl bg-white/90 p-1 shadow" loading="lazy" />
-            <span className="relative text-[10px] sm:text-xs font-black text-white drop-shadow leading-tight">{p.label}</span>
-          </button>
-        ))}
-      </div>
+
     </div>
   );
 };

@@ -14,7 +14,6 @@ import { RainbowFortuneWheelModal } from './components/RainbowFortuneWheelModal'
 import { MissionsModal } from './components/MissionsModal';
 import { StoreModal } from './components/StoreModal';
 import { MiniGamesModal } from './components/MiniGamesModal';
-import { BottomTabBar } from './components/BottomTabBar';
 import { sound } from './utils/audio';
 import { SlotGameDef } from './types/game';
 
@@ -465,7 +464,7 @@ export default function App() {
       />
 
       {/* Main content area with bottom tab padding */}
-      <main className="pb-20">
+      <main className="pb-4">
         {view === 'lobby' ? (
           <>
             <BannerCarousel onClaimPromo={(id) => {
@@ -513,52 +512,6 @@ export default function App() {
               });
             }} />
 
-            {/* Featured Fortune Board promo card — bridges board game with casino lobby */}
-            <div className="lobby-container px-3 pb-4">
-              <div className="rounded-3xl overflow-hidden border-2 border-amber-400/30 shadow-xl">
-                <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-4 sm:p-5">
-                  <div className="flex items-center justify-between gap-3 mb-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-xl shadow">🎲</div>
-                      <div>
-                        <h3 className="font-fredoka font-black text-white text-sm sm:text-base leading-none">FortuneGo • Tabuleiro Mágico</h3>
-                        <p className="text-xs text-amber-100/70">Gire o dado, avance casas e colete prêmios + multiplicadores</p>
-                      </div>
-                    </div>
-                    <span className="hidden sm:flex items-center gap-1 text-[10px] font-black px-2 py-1 rounded-full bg-amber-400 text-[#0f2e1f]">24 CASAS • 8 PRÊMIOS</span>
-                  </div>
-                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-center">
-                    {[
-                      { icon: '💰', label: 'Coins', value: '+500' },
-                      { icon: '🎁', label: 'Baú', value: 'Surpresa' },
-                      { icon: '🎡', label: 'Roda', value: 'Cascade x10' },
-                      { icon: '⚡', label: 'Boost', value: '5x' },
-                      { icon: '🏆', label: 'Jackpot', value: 'R$ 88k' },
-                      { icon: '🎲', label: 'Rolls', value: '+8' },
-                    ].map(it => (
-                      <div key={it.label} className="rounded-2xl bg-white/5 border border-white/10 p-2 flex flex-col items-center gap-1">
-                        <span className="text-xl">{it.icon}</span>
-                        <span className="text-[10px] font-black text-white/80 uppercase tracking-widest">{it.label}</span>
-                        <span className="text-xs font-black text-amber-300">{it.value}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-4 flex flex-col sm:flex-row gap-2">
-                    <button onClick={() => setView('board')} className="flex-1 py-3 rounded-full bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-[#0f2e1f] font-black text-sm shadow-lg hover:brightness-110 active:scale-95 cursor-pointer flex items-center justify-center gap-2">
-                      🎮 JOGAR TABULEIRO AGORA • {state.rolls} rolls
-                    </button>
-                    <button onClick={() => setShowWheel(true)} className="px-5 py-3 rounded-full bg-white/10 border border-white/15 text-white font-bold text-sm hover:bg-white/15 active:scale-95 cursor-pointer flex items-center justify-center gap-1.5">
-                      🎡 Girar Roda
-                    </button>
-                  </div>
-                </div>
-              </div>
-              {/* Footer info like FortuneGo */}
-              <div className="mt-4 rounded-2xl bg-black/30 border border-white/5 p-3 text-center">
-                <p className="text-[10px] font-bold tracking-widest uppercase text-white/40">Licenciado • Jogo Responsável • 18+ • FortuneGo Oficial</p>
-                <p className="text-[10px] text-white/30 mt-1">Este é um jogo demonstrativo com moeda fictícia. Sem valor monetário real.</p>
-              </div>
-            </div>
           </>
         ) : (
           <div className="lobby-container px-3 pt-4">
@@ -593,8 +546,6 @@ export default function App() {
           </div>
         )}
       </main>
-
-      <BottomTabBar active={bottomTab} onChange={handleBottomNav} onDeposit={() => setShowDeposit(true)} />
 
       {/* All slot titles share the same responsive cabinet and controls. */}
       <SlotGameModal
