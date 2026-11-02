@@ -84,26 +84,6 @@ export const GameGrid: React.FC<GameGridProps> = ({ category, onPlay, onToggleFa
           </div>
         ))}
       </div>
-
-      {/* Promo CTA after grid — like FortuneGo extra banner */}
-      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="rounded-2xl p-3 flex items-center gap-3 border border-amber-400/20 bg-gradient-to-br from-amber-500/15 via-yellow-500/10 to-orange-500/15">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center text-white text-xl">🎲</div>
-          <div className="flex-1">
-            <p className="font-black text-white text-xs">Tabuleiro FortuneGo</p>
-            <p className="text-[11px] text-amber-100/80">Ganhe rodadas girando no tabuleiro mágico</p>
-          </div>
-          <span className="text-amber-300 font-black text-xs">›</span>
-        </div>
-        <div className="rounded-2xl p-3 flex items-center gap-3 border border-violet-400/20 bg-gradient-to-br from-violet-500/15 to-fuchsia-500/10">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-white text-xl">🎡</div>
-          <div className="flex-1">
-            <p className="font-black text-white text-xs">Roda Rainbow</p>
-            <p className="text-[11px] text-violet-100/80">Gire e ative cascatas com multiplicadores!</p>
-          </div>
-          <span className="text-violet-300 font-black text-xs">›</span>
-        </div>
-      </div>
     </div>
   );
 };
