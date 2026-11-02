@@ -123,6 +123,20 @@
 .animate-characterFloat { animation: characterFloat 2.8s ease-in-out infinite; will-change: transform; }
 .animate-characterSpin { animation: characterSpin 0.55s ease-in-out infinite; will-change: transform; }
 
+/* Grid dançando na página inicial igual Candy Burst e Museum Mystery */
+@keyframes gridDance {
+  0%, 100% { transform: translateY(0) scale(1) rotate(-0.6deg); }
+  15% { transform: translateY(-3px) scale(1.03) rotate(0.8deg); }
+  30% { transform: translateY(-1px) scale(1.01) rotate(-0.5deg); }
+  45% { transform: translateY(-4px) scale(1.04) rotate(0.7deg); }
+  60% { transform: translateY(-2px) scale(1.02) rotate(-0.4deg); }
+  75% { transform: translateY(-3.5px) scale(1.03) rotate(0.5deg); }
+}
+.animate-grid-dance {
+  animation: gridDance 2.4s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
 @keyframes jackpot-ticker {
   0% { transform: translateX(0); }
   100% { transform: translateX(-50%); }

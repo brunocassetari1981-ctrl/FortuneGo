@@ -1,5 +1,5 @@
 import React from 'react';
-import { Star, Play, Zap } from 'lucide-react';
+import { Play } from 'lucide-react';
 import { SlotGameDef } from '../types/game';
 import { getGamesByCategory } from '../data/slotGames';
 
@@ -38,42 +38,20 @@ export const GameGrid: React.FC<GameGridProps> = ({ category, onPlay, onToggleFa
             className="group relative rounded-2xl bg-[#132e23] border border-white/10 overflow-hidden shadow-md hover:shadow-xl hover:border-amber-400/30 hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col"
             onClick={() => onPlay(game)}
           >
-            {/* Favorite star — top right like FortuneGo */}
-            <button
-              onClick={e => { e.stopPropagation(); onToggleFav?.(game.id); }}
-              className={`absolute top-1.5 right-1.5 z-10 w-6 h-6 rounded-full backdrop-blur flex items-center justify-center border cursor-pointer transition-all ${favSet?.has(game.id) ? 'bg-amber-400 border-amber-300 text-white' : 'bg-black/40 border-white/15 text-white/80 hover:bg-black/60'}`}
-            >
-              <Star className={`w-3.5 h-3.5 ${favSet?.has(game.id) ? 'fill-white' : ''}`} />
-            </button>
-
-            {/* HOT / NEW badge */}
-            {(game.hot || game.new) && (
-              <div className={`absolute top-1.5 left-1.5 z-10 text-[8px] font-black tracking-widest px-1.5 py-0.5 rounded-full border shadow ${game.hot ? 'bg-red-500 text-white border-red-400' : 'bg-emerald-500 text-white border-emerald-400'}`}>
-                {game.hot ? 'HOT' : 'NEW'}
-              </div>
-            )}
-
-            {/* Poster image — 1.33 aspect like PG Soft cards */}
-            <div className="relative aspect-[1/1.32] overflow-hidden bg-gradient-to-br from-black/20 to-black/40">
+            {/* Poster image — personagens dançando igual Candy Burst e Museum Mystery */}
+            <div className="relative aspect-[1/1.32] overflow-hidden bg-gradient-to-br from-black/15 to-black/35">
               <img
                 src={game.thumb}
                 alt={game.name}
-                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                className="h-full w-full object-cover animate-grid-dance will-change-transform"
                 loading="lazy"
                 onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
-              {/* Gradient overlay for PG Soft look */}
-              <div className={`absolute inset-0 bg-gradient-to-t ${game.bgGradient} opacity-10 group-hover:opacity-20 transition-opacity`} />
               {/* Play overlay on hover */}
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/35 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
                 <div className="w-10 h-10 rounded-full bg-white/95 text-[#164633] flex items-center justify-center shadow-lg animate-win-pulse">
                   <Play className="w-5 h-5 fill-[#164633] ml-0.5" />
                 </div>
-              </div>
-              {/* Provider chip bottom */}
-              <div className="absolute bottom-1 left-1 right-1 flex items-center justify-between">
-                <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-black/60 text-white/80 border border-white/10 backdrop-blur">PG Soft</span>
-                <span className="hidden sm:flex items-center gap-0.5 text-[8px] font-bold text-white bg-black/50 px-1.5 py-0.5 rounded-full border border-white/10"><Zap className="w-3 h-3 text-amber-300" />{game.rtp.toFixed(1)}%</span>
               </div>
             </div>
 
