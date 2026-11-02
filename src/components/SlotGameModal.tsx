@@ -187,15 +187,16 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
             {musicOn ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
           </button>
           {characterSrc && (
-            <div className="relative z-10 flex flex-col items-center pointer-events-none select-none -mb-1">
+            <div className="relative z-10 flex flex-col items-center pointer-events-none select-none -mb-1" style={{ perspective: '900px' }}>
               <img
                 src={characterSrc}
                 alt={game.name}
                 draggable={false}
-                className={`h-auto w-[clamp(92px,24vw,118px)] object-contain ${spinning ? 'animate-characterSpin' : 'animate-characterFloat'}`}
-                style={{ filter: 'drop-shadow(0 12px 14px rgba(0,0,0,0.45))', transformStyle: 'preserve-3d' }}
+                className={`h-auto w-[clamp(98px,26vw,126px)] object-contain drop-shadow-[0_10px_16px_rgba(0,0,0,0.5)] ${spinning ? 'animate-characterSpin' : 'animate-characterFloat'}`}
+                style={{ filter: 'drop-shadow(0 14px 18px rgba(0,0,0,0.5)) drop-shadow(0 0 10px rgba(255,255,255,0.12))', transform: 'translateZ(18px) rotateX(4deg)', transformStyle: 'preserve-3d' }}
                 onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
               />
+              <div className=" -mt-2 h-[8px] w-[58%] rounded-[50%] bg-black/25 blur-[8px]" />
             </div>
           )}
           <div className="relative z-10 mt-1 whitespace-nowrap rounded-full border border-white/20 bg-black/40 px-3 py-1 text-[9px] font-black tracking-wide text-white shadow backdrop-blur">
