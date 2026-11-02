@@ -476,34 +476,7 @@ export default function App() {
 
             <CategoryTabs active={activeCategory} onSelect={setActiveCategory} />
 
-            {/* Live jackpot ticker + wins strip like FortuneGo */}
-            <div className="lobby-container px-3 mt-3">
-              <div className="rounded-2xl border border-amber-400/20 bg-gradient-to-r from-amber-500/15 via-yellow-500/10 to-amber-500/15 p-2.5 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center text-white shadow">🏆</div>
-                  <div>
-                    <p className="text-[10px] font-black tracking-widest uppercase text-amber-200 leading-none">Jackpot Progressivo</p>
-                    <p className="font-fredoka font-black text-white text-sm leading-none">R$ {state.jackpotPool.toLocaleString('pt-BR')}</p>
-                  </div>
-                </div>
-                <button onClick={() => setView('board')} className="shrink-0 px-3 py-2 rounded-full bg-gradient-to-r from-amber-400 to-yellow-400 text-[#0f2e1f] font-black text-xs shadow hover:brightness-110 active:scale-95 cursor-pointer flex items-center gap-1">
-                  <span className="hidden sm:inline">🎲</span> Tabuleiro FortuneGo
-                </button>
-              </div>
 
-              {/* Winner ticker — mimics FortuneGo winnerInFooterTop */}
-              <div className="mt-2 rounded-full bg-black/40 border border-white/5 px-3 py-1.5 overflow-hidden flex items-center gap-3">
-                <span className="shrink-0 text-[10px] font-black px-2 py-1 rounded-full bg-emerald-500 text-white">AO VIVO</span>
-                <div className="flex-1 overflow-hidden relative h-4 text-xs">
-                  <div className="absolute inset-0 flex items-center gap-6 whitespace-nowrap text-white/80 animate-jackpot-ticker font-semibold">
-                    <span>🔥 @{randomName()} ganhou R$ {Math.floor(Math.random() * 8000 + 500).toLocaleString('pt-BR')} no Fortune Tiger</span>
-                    <span>⭐ @{randomName()} ganhou R$ {Math.floor(Math.random() * 5000 + 300).toLocaleString('pt-BR')} no Fortune Rabbit</span>
-                    <span>💎 @{randomName()} ganhou R$ {Math.floor(Math.random() * 12000 + 1000).toLocaleString('pt-BR')} no Wild Bandito</span>
-                    <span>🔥 @{randomName()} ganhou R$ {Math.floor(Math.random() * 8000 + 500).toLocaleString('pt-BR')} no Fortune Dragon</span>
-                  </div>
-                </div>
-              </div>
-            </div>
 
             <GameGrid category={activeCategory} onPlay={setActiveSlotGame} favSet={slotFav} onToggleFav={(id) => {
               setSlotFav(prev => {
