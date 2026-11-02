@@ -156,6 +156,19 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
   };
 
   // Cores temáticas por personagem — mantém mesma interação
+  const CHARACTER_MAP: Record<string, string> = {
+    'fortune-tiger': '/characters/fortune-tiger.png',
+    'fortune-rabbit': '/characters/fortune-rabbit.png',
+    'fortune-dragon': '/characters/fortune-dragon.png',
+    'fortune-ox': '/characters/fortune-ox.png',
+    'fortune-rabbit-2': '/characters/fortune-rabbit-2.png',
+    'fortune-snake': '/characters/fortune-snake.png',
+    'pinata-wins': '/characters/pinata-wins.png',
+    'wild-bandito': '/characters/wild-bandito.png',
+    'dragon-hatch': '/characters/dragon-hatch.png',
+  };
+  const characterSrc = game ? CHARACTER_MAP[game.id] : undefined;
+
   const headerBg = `linear-gradient(to bottom, ${game.primaryColor}, ${game.secondaryColor})`;
   const bottomBg = `linear-gradient(to bottom, ${game.primaryColor}dd, ${game.secondaryColor}dd)`;
 
@@ -242,6 +255,23 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
                   onStop={handleReelStop}
                 />
               ))}
+              {/* Personagem animado no rolo central — FortuneGo */}
+              {characterSrc && (
+                <div className="pointer-events-none absolute left-1/2 top-[2%] z-30 flex h-[96%] w-[34%] -translate-x-1/2 select-none items-start justify-center">
+                  {/* brilho atrás */}
+                  <div className="absolute top-[18%] h-[62%] w-[88%] rounded-full bg-white/10 blur-2xl" style={{ background: `radial-gradient(circle at 50% 30%, ${game.secondaryColor}88, transparent 70%)` }} />
+                  <img
+                    src={characterSrc}
+                    alt={`${game.name} personagem`}
+                    draggable={false}
+                    className={`relative h-auto max-h-[115%] w-full max-w-[150px] object-contain drop-shadow-[0_12px_22px_rgba(0,0,0,0.7)] ${spinning ? 'animate-characterSpin' : 'animate-characterFloat'}`}
+                    style={{ objectPosition: 'center top' }}
+                    onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                  />
+                  {/* sombra no chão do rolo */}
+                  <div className="absolute bottom-[14%] h-3 w-[58%] rounded-full bg-black/35 blur-[6px]" />
+                </div>
+              )}
             </div>
           </div>
 

@@ -106,6 +106,23 @@
   }
 }
 
+/* Personagem central FortuneGo - flutuando sobre o rolo central */
+@keyframes characterFloat {
+  0%, 100% { transform: translateY(0) scale(1) rotate(-1deg); }
+  25% { transform: translateY(-7px) scale(1.04) rotate(1deg); }
+  50% { transform: translateY(-10px) scale(1.05) rotate(-0.5deg); }
+  75% { transform: translateY(-4px) scale(1.02) rotate(1deg); }
+}
+@keyframes characterSpin {
+  0%, 100% { transform: translateY(0) scale(1) rotate(0deg); filter: brightness(1); }
+  20% { transform: translateY(-12px) scale(1.12) rotate(-4deg); filter: brightness(1.25); }
+  40% { transform: translateY(-6px) scale(0.98) rotate(4deg); }
+  60% { transform: translateY(-14px) scale(1.1) rotate(-3deg); }
+  80% { transform: translateY(-5px) scale(1.06) rotate(2deg); }
+}
+.animate-characterFloat { animation: characterFloat 2.8s ease-in-out infinite; will-change: transform; }
+.animate-characterSpin { animation: characterSpin 0.55s ease-in-out infinite; will-change: transform; }
+
 @keyframes jackpot-ticker {
   0% { transform: translateX(0); }
   100% { transform: translateX(-50%); }
