@@ -169,28 +169,26 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
   };
   const characterSrc = game ? CHARACTER_MAP[game.id] : undefined;
 
-  const headerBg = `linear-gradient(to bottom, ${game.primaryColor}, ${game.secondaryColor})`;
-  const bottomBg = `linear-gradient(to bottom, ${game.primaryColor}dd, ${game.secondaryColor}dd)`;
+  // Transparente em todos os jogos — sem cores sólidas
+  const headerBg = 'transparent';
+  const bottomBg = 'transparent';
 
   return (
-    <div className="fixed inset-y-0 left-0 z-[60] flex w-screen items-center justify-center overflow-hidden bg-black/70 p-0 backdrop-blur-[2px] sm:p-3" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-      <FortuneArtwork game={game} className="pointer-events-none absolute inset-0 h-full w-full scale-110 opacity-40 blur-xl" />
-      <div aria-hidden="true" className="absolute inset-0 bg-black/50" />
-      <div className="relative z-10 flex h-[100dvh] w-full max-w-[430px] flex-col overflow-hidden border-0 bg-[#1a0e2b] shadow-2xl sm:h-[92vh] sm:rounded-[28px] sm:border-[7px] sm:border-[#111] sm:shadow-[0_20px_60px_rgba(0,0,0,0.9)]">
+    <div className="fixed inset-y-0 left-0 z-[60] flex w-screen items-center justify-center overflow-hidden bg-black/60 p-0 backdrop-blur-[2px] sm:p-3" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      <FortuneArtwork game={game} className="pointer-events-none absolute inset-0 h-full w-full scale-110 opacity-20 blur-xl" />
+      <div aria-hidden="true" className="absolute inset-0 bg-transparent" />
+      <div className="relative z-10 flex h-[100dvh] w-full max-w-[430px] flex-col overflow-hidden border border-white/10 bg-black/30 shadow-2xl backdrop-blur-md sm:h-[92vh] sm:rounded-[28px] sm:border-white/10 sm:shadow-[0_20px_60px_rgba(0,0,0,0.6)]">
 
-        {/* Header superior ajustado — compacto para não cobrir rolo central (responsivo) */}
-        <div className="relative z-20 h-[13%] min-h-[78px] max-h-[110px] shrink-0 overflow-visible flex items-center justify-center" style={{ background: headerBg }}>
-          <div className="absolute inset-0 overflow-hidden">
-            <FortuneArtwork game={game} className="h-full w-full object-cover object-center opacity-55" />
-            <div className="absolute inset-0" style={{ background: `linear-gradient(to bottom, ${game.primaryColor}77, ${game.secondaryColor}cc)` }} />
+        {/* Header — transparente em todos os jogos */}
+        <div className="relative z-20 h-[13%] min-h-[78px] max-h-[110px] shrink-0 overflow-visible flex items-center justify-center bg-transparent backdrop-blur-sm border-b border-white/5" style={{ background: headerBg }}>
+          <div className="absolute inset-0 overflow-hidden bg-transparent">
+            <FortuneArtwork game={game} className="h-full w-full object-cover object-center opacity-10" />
           </div>
-          <div className="absolute top-0 inset-x-0 h-6 opacity-90" style={{ background: game.primaryColor, borderBottom: `4px solid ${game.secondaryColor}` }} />
           <div className="absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center">
-            <div className="whitespace-nowrap rounded-full border border-white/30 bg-black/35 px-3 py-1 text-[9px] font-black tracking-wide text-white shadow backdrop-blur">
+            <div className="whitespace-nowrap rounded-full border border-white/20 bg-black/40 px-3 py-1 text-[9px] font-black tracking-wide text-white shadow backdrop-blur">
               {headerSubtitle}
             </div>
           </div>
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.16),transparent_40%)] pointer-events-none" />
           <button onClick={handleClose} className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/30 backdrop-blur text-white border border-white/20 flex items-center justify-center transition-all duration-200 hover:scale-110 hover:bg-red-500/80 hover:shadow-[0_0_14px_rgba(255,255,255,0.5)] active:scale-95">
             <X className="w-4 h-4" />
           </button>
@@ -199,8 +197,8 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
           </button>
         </div>
 
-        {/* Rolo central - área responsiva que se ajusta a cada display, alinhamento superior = inferior */}
-        <div className="flex-1 bg-[#0b1220] relative flex items-center justify-center px-1 py-[2.5%] sm:py-3 overflow-visible min-h-[280px]">
+        {/* Rolo central - transparente, área responsiva */}
+        <div className="flex-1 bg-transparent backdrop-blur-[1px] relative flex items-center justify-center px-1 py-[2.5%] sm:py-3 overflow-visible min-h-[280px] border-y border-white/5">
 
 
           <div className="relative z-10 flex h-full w-[92%] max-w-[356px] flex-col overflow-visible" style={{ background: 'transparent' }}>
@@ -260,8 +258,8 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
 
 
 
-        {/* Bet bar */}
-        <div className="h-8 bg-[#1a0f2e] border-b flex items-center justify-between px-2 shrink-0" style={{ borderColor: `${game.secondaryColor}55` }}>
+        {/* Bet bar — transparente */}
+        <div className="h-8 bg-black/20 backdrop-blur-sm border-b border-white/5 flex items-center justify-between px-2 shrink-0">
           <div className="flex items-center gap-2 text-[11px] font-black">
             <span className="w-6 h-6 rounded-full bg-[#2a0f4a] border border-white/10 flex items-center justify-center text-white text-xs">🌎</span>
             <span className="text-amber-300">R$ {coins.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
@@ -273,8 +271,8 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
           </div>
         </div>
 
-        {/* Bottom control — mesma base do topo, sem cobrir rolo central */}
-        <div className="relative flex h-[15%] min-h-[86px] max-h-[108px] shrink-0 flex-col items-center justify-between overflow-hidden px-3 py-2" style={{ background: bottomBg }}>
+        {/* Bottom control — transparente em todos os jogos */}
+        <div className="relative flex h-[15%] min-h-[86px] max-h-[108px] shrink-0 flex-col items-center justify-between overflow-hidden px-3 py-2 bg-transparent backdrop-blur-sm border-t border-white/5" style={{ background: bottomBg }}>
           <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-yellow-400 to-transparent opacity-60" />
           <div className="absolute -left-6 -bottom-6 w-20 h-20 rounded-full bg-yellow-400/10 blur-xl" />
           <div className="absolute -right-6 -bottom-6 w-20 h-20 rounded-full bg-yellow-400/10 blur-xl" />

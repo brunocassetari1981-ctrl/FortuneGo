@@ -183,10 +183,11 @@ export const SlotReel: React.FC<SlotReelProps> = ({
           : 'h-full border-y-2 border-r border-white/15 first:border-l'
       }`}
       style={{
-        borderColor: reelIndex === 1 ? '#56d8ff' : `${game.secondaryColor}55`,
+        borderColor: reelIndex === 1 ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.08)',
         containerType: 'size',
-        background: 'linear-gradient(180deg, #26105b 0%, #351474 50%, #26105b 100%)',
-      }}
+        background: 'rgba(0,0,0,0.28)',
+        backdropFilter: 'blur(6px)',
+      } as React.CSSProperties}
     >
       {isSpinning && strip.length > 0 ? (
         <div
