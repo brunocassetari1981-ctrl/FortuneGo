@@ -178,11 +178,8 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
       <div aria-hidden="true" className="absolute inset-0 bg-transparent" />
       <div className="relative z-10 flex h-[100dvh] w-full max-w-[430px] flex-col overflow-hidden border border-white/10 bg-black/30 shadow-2xl backdrop-blur-md sm:h-[92vh] sm:rounded-[28px] sm:border-white/10 sm:shadow-[0_20px_60px_rgba(0,0,0,0.6)]">
 
-        {/* Header — transparente com personagem 100% visível em todos os jogos */}
-        <div className="relative z-20 h-[21%] min-h-[132px] max-h-[152px] shrink-0 overflow-visible flex flex-col items-center justify-end pb-6 bg-transparent backdrop-blur-sm border-b border-white/5" style={{ background: headerBg }}>
-          <div className="absolute inset-0 overflow-hidden bg-transparent pointer-events-none">
-            <FortuneArtwork game={game} className="h-full w-full object-cover object-center opacity-8" />
-          </div>
+        {/* Header — só figura 3D sem fundo em todos os jogos */}
+        <div className="relative z-20 h-[21%] min-h-[132px] max-h-[152px] shrink-0 overflow-visible flex flex-col items-center justify-end pb-6 bg-transparent border-b border-white/5" style={{ background: headerBg }}>
           <button onClick={handleClose} className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/30 backdrop-blur text-white border border-white/20 flex items-center justify-center transition-all duration-200 hover:scale-110 hover:bg-red-500/80 hover:shadow-[0_0_14px_rgba(255,255,255,0.5)] active:scale-95 z-20">
             <X className="w-4 h-4" />
           </button>
@@ -190,23 +187,20 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
             {musicOn ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
           </button>
           {characterSrc && (
-            <div className="relative z-10 flex flex-col items-center pointer-events-none select-none -mb-1" style={{ perspective: '900px' }}>
+            <div className="relative z-10 flex flex-col items-center pointer-events-none select-none -mb-1">
               <img
                 src={characterSrc}
                 alt={game.name}
                 draggable={false}
-                className={`h-auto w-[clamp(92px,24vw,118px)] object-contain drop-shadow-[0_10px_16px_rgba(0,0,0,0.6)] ${spinning ? 'animate-characterSpin' : 'animate-characterFloat'}`}
-                style={{ filter: 'drop-shadow(0 10px 12px rgba(0,0,0,0.55)) drop-shadow(0 0 10px rgba(255,255,255,0.18))', transformStyle: 'preserve-3d' }}
+                className={`h-auto w-[clamp(92px,24vw,118px)] object-contain ${spinning ? 'animate-characterSpin' : 'animate-characterFloat'}`}
+                style={{ filter: 'drop-shadow(0 12px 14px rgba(0,0,0,0.45))', transformStyle: 'preserve-3d' }}
                 onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
               />
-              <div className=" -mt-1 h-[7px] w-[64%] rounded-[50%] bg-black/35 blur-[6px]" />
             </div>
           )}
           <div className="relative z-10 mt-1 whitespace-nowrap rounded-full border border-white/20 bg-black/40 px-3 py-1 text-[9px] font-black tracking-wide text-white shadow backdrop-blur">
             {headerSubtitle}
           </div>
-          {/* linha superior do rolo central — plataforma visível sem tampar personagem */}
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[92%] max-w-[356px] h-[8px] rounded-full border-y border-white/50 bg-gradient-to-b from-[#8be8ff] via-[#56d8ff] to-[#1e5f86] shadow-[0_4px_10px_rgba(86,216,255,0.5),0_1px_0_rgba(255,255,255,0.9)_inset] z-10" />
         </div>
 
         {/* Rolo central - transparente, área responsiva */}
