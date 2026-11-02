@@ -14,6 +14,7 @@ import { RainbowFortuneWheelModal } from './components/RainbowFortuneWheelModal'
 import { MissionsModal } from './components/MissionsModal';
 import { StoreModal } from './components/StoreModal';
 import { MiniGamesModal } from './components/MiniGamesModal';
+import { BottomTabBar } from './components/BottomTabBar';
 import { sound } from './utils/audio';
 import { SlotGameDef } from './types/game';
 
@@ -464,7 +465,7 @@ export default function App() {
       />
 
       {/* Main content area with bottom tab padding */}
-      <main className="pb-4">
+      <main className="pb-20">
         {view === 'lobby' ? (
           <>
             <BannerCarousel onClaimPromo={(id) => {
@@ -546,6 +547,8 @@ export default function App() {
           </div>
         )}
       </main>
+
+      <BottomTabBar active={bottomTab} onChange={handleBottomNav} onDeposit={() => setShowDeposit(true)} />
 
       {/* All slot titles share the same responsive cabinet and controls. */}
       <SlotGameModal
