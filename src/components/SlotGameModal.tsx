@@ -177,36 +177,16 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
       <FortuneArtwork game={game} className="pointer-events-none absolute inset-0 h-full w-full scale-110 opacity-40 blur-xl" />
       <div aria-hidden="true" className="absolute inset-0 bg-black/50" />
       <div className="relative z-10 flex h-[100dvh] w-full max-w-[430px] flex-col overflow-hidden border-0 bg-[#1a0e2b] shadow-2xl sm:h-[92vh] sm:rounded-[28px] sm:border-[7px] sm:border-[#111] sm:shadow-[0_20px_60px_rgba(0,0,0,0.9)]">
-        {/* Status bar */}
-        <div className="h-6 bg-[#0a1f15] flex items-center justify-between px-3 text-[10px] font-bold text-white/70 shrink-0">
-          <span>FortuneGo • {game.name}</span>
-          <span>Horário de login: 00:{String(Math.floor(Date.now()/1000)%60).padStart(2,'0')}:{String(new Date().getSeconds()).padStart(2,'0')}</span>
-        </div>
 
-        {/* Character header — cor por personagem, mesmo layout */}
-        <div className="relative z-20 h-[18%] min-h-[100px] max-h-[140px] shrink-0 overflow-visible flex items-center justify-center" style={{ background: headerBg }}>
+        {/* Header superior ajustado — limpo acima do rolo (Gemini) */}
+        <div className="relative z-20 h-[14%] min-h-[86px] max-h-[118px] shrink-0 overflow-visible flex items-center justify-center" style={{ background: headerBg }}>
           <div className="absolute inset-0 overflow-hidden">
             <FortuneArtwork game={game} className="h-full w-full object-cover object-center opacity-55" />
             <div className="absolute inset-0" style={{ background: `linear-gradient(to bottom, ${game.primaryColor}77, ${game.secondaryColor}cc)` }} />
           </div>
           <div className="absolute top-0 inset-x-0 h-6 opacity-90" style={{ background: game.primaryColor, borderBottom: `4px solid ${game.secondaryColor}` }} />
-          <div className="absolute bottom-0 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center">
-            {characterSrc ? (
-              <img
-                src={characterSrc}
-                alt={game.name}
-                draggable={false}
-                className={`h-[clamp(92px,26vw,124px)] w-[clamp(92px,26vw,124px)] object-contain drop-shadow-[0_10px_14px_rgba(0,0,0,0.55)] ${spinning ? 'animate-characterSpin' : 'animate-characterFloat'}`}
-                onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-              />
-            ) : (
-              <SlotSymbolArtwork
-                symbol={game.symbols.find(symbol => symbol.isWild) ?? game.symbols[0]}
-                bare
-                className="h-[clamp(100px,28vw,128px)] w-[clamp(100px,28vw,128px)] drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)]"
-              />
-            )}
-            <div className="-mt-2 whitespace-nowrap rounded-full border border-white/30 bg-black/35 px-2 py-0.5 text-[8px] font-black text-white shadow backdrop-blur">
+          <div className="absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center">
+            <div className="whitespace-nowrap rounded-full border border-white/30 bg-black/35 px-3 py-1 text-[9px] font-black tracking-wide text-white shadow backdrop-blur">
               {headerSubtitle}
             </div>
           </div>
@@ -221,22 +201,31 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
 
         {/* Shared three-reel cabinet - só rolo central visível (paytable e banner removidos) */}
         <div className="flex-1 bg-[#0b1220] relative flex items-center justify-center p-1 pt-2 pb-3 overflow-visible">
-          {/* Left payline */}
-          <div className="absolute left-0 top-10 bottom-10 w-7 border-y-4 border-r-4 rounded-r-xl flex flex-col items-center justify-around py-2 font-black shadow-lg z-10" style={{ backgroundColor: game.primaryColor, borderColor: game.secondaryColor, color: 'white' }}>
-            {Array.from({ length: SLOT_PAYLINE_COUNT }, (_, index) => index + 1).map(n => (
-              <span key={`L${n}`} className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] leading-none ${winPositions.size>0 ? 'bg-yellow-400 text-black animate-pulse' : 'bg-black/30 text-white'}`}>{n}</span>
-            ))}
-          </div>
-          {/* Right payline */}
-          <div className="absolute right-0 top-10 bottom-10 w-7 border-y-4 border-l-4 rounded-l-xl flex flex-col items-center justify-around py-2 font-black shadow-lg z-10" style={{ backgroundColor: game.primaryColor, borderColor: game.secondaryColor, color: 'white' }}>
-            {Array.from({ length: SLOT_PAYLINE_COUNT }, (_, index) => index + 1).map(n => (
-              <span key={`R${n}`} className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${winPositions.size>0 ? 'bg-yellow-400 text-black animate-pulse' : 'bg-black/30 text-white'}`}>{n}</span>
-            ))}
-          </div>
+
 
           <div className="relative z-10 flex h-full w-[94%] max-w-[360px] flex-col overflow-visible" style={{ background: 'transparent' }}>
+            {/* Personagem 3D apoiado no final da linha superior do rolo central — Gemini */}
+            {characterSrc && (
+              <div className="relative z-30 flex h-[0px] w-full justify-center overflow-visible pointer-events-none select-none">
+                <div className="absolute bottom-[-10px] left-1/2 flex -translate-x-1/2 flex-col items-center" style={{ perspective: '1000px' }}>
+                  {/* Plataforma superior do rolo central — linha total igual embaixo */}
+                  <div className="absolute -bottom-[7px] left-1/2 h-[10px] w-[118%] -translate-x-1/2 rounded-full border-y border-white/60 bg-gradient-to-b from-[#8be8ff] via-[#56d8ff] to-[#1e5f86] shadow-[0_6px_14px_rgba(86,216,255,0.6),0_2px_0_rgba(255,255,255,0.9)_inset,0_-2px_6px_rgba(0,0,0,0.5)_inset]" />
+                  <div className="absolute -bottom-[7px] left-1/2 h-[4px] w-[118%] -translate-x-1/2 rounded-full bg-white/40 blur-[2px]" />
+                  <img
+                    src={characterSrc}
+                    alt={game.name}
+                    draggable={false}
+                    className={`relative h-auto w-[clamp(118px,32vw,158px)] object-contain select-none drop-shadow-[0_14px_18px_rgba(0,0,0,0.65)] [transform:translateZ(28px)_rotateX(6deg)] ${spinning ? 'animate-characterSpin' : 'animate-characterFloat'}`}
+                    style={{ filter: 'drop-shadow(0 14px 16px rgba(0,0,0,0.65)) drop-shadow(0 0 12px rgba(86,216,255,0.35))', transformStyle: 'preserve-3d' }}
+                    onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                  />
+                  {/* Sombra projetada no rolo */}
+                  <div className=" -mt-1 h-[10px] w-[72%] rounded-[50%] bg-black/45 blur-[7px]" />
+                </div>
+              </div>
+            )}
             <div
-              className="relative z-10 grid min-h-0 flex-1 w-full grid-cols-3 self-center overflow-visible"
+              className={`relative z-10 grid min-h-0 w-full grid-cols-3 self-center overflow-visible ${characterSrc ? 'flex-1 mt-3' : 'flex-1'}`}
               style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}
             >
               {Array.from({ length: SLOT_REEL_COUNT }, (_, reelIdx) => (

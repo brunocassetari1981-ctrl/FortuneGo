@@ -177,10 +177,10 @@ export const SlotReel: React.FC<SlotReelProps> = ({
   return (
     <div
       ref={viewportRef}
-      className={`relative min-w-0 flex-1 self-center overflow-hidden border-y-2 ${
+      className={`relative min-w-0 flex-1 self-center overflow-hidden ${
         reelIndex === 1
-          ? 'z-20 h-[132%] border-x-[3px] shadow-[0_0_20px_rgba(40,190,255,0.38)]'
-          : 'h-full border-r border-white/15 first:border-l'
+          ? 'z-20 h-[132%] border-[3px] shadow-[0_0_22px_rgba(86,216,255,0.55),0_2px_0_rgba(255,255,255,0.85)_inset,0_-2px_8px_rgba(0,0,0,0.6)_inset] rounded-[4px]'
+          : 'h-full border-y-2 border-r border-white/15 first:border-l'
       }`}
       style={{
         borderColor: reelIndex === 1 ? '#56d8ff' : `${game.secondaryColor}55`,
