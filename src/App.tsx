@@ -58,8 +58,7 @@ export default function App() {
   }, [state.soundEnabled]);
 
   useEffect(() => {
-    if (!state.soundEnabled || activeSlotGame) return;
-    sound.playBackground();
+    sound.stopBackground();
     return () => sound.stopBackground();
   }, [state.soundEnabled, !activeSlotGame]);
 
