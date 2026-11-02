@@ -178,22 +178,35 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
       <div aria-hidden="true" className="absolute inset-0 bg-transparent" />
       <div className="relative z-10 flex h-[100dvh] w-full max-w-[430px] flex-col overflow-hidden border border-white/10 bg-black/30 shadow-2xl backdrop-blur-md sm:h-[92vh] sm:rounded-[28px] sm:border-white/10 sm:shadow-[0_20px_60px_rgba(0,0,0,0.6)]">
 
-        {/* Header — transparente em todos os jogos */}
-        <div className="relative z-20 h-[13%] min-h-[78px] max-h-[110px] shrink-0 overflow-visible flex items-center justify-center bg-transparent backdrop-blur-sm border-b border-white/5" style={{ background: headerBg }}>
-          <div className="absolute inset-0 overflow-hidden bg-transparent">
-            <FortuneArtwork game={game} className="h-full w-full object-cover object-center opacity-10" />
+        {/* Header — transparente com personagem 100% visível em todos os jogos */}
+        <div className="relative z-20 h-[21%] min-h-[132px] max-h-[152px] shrink-0 overflow-visible flex flex-col items-center justify-end pb-6 bg-transparent backdrop-blur-sm border-b border-white/5" style={{ background: headerBg }}>
+          <div className="absolute inset-0 overflow-hidden bg-transparent pointer-events-none">
+            <FortuneArtwork game={game} className="h-full w-full object-cover object-center opacity-8" />
           </div>
-          <div className="absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center">
-            <div className="whitespace-nowrap rounded-full border border-white/20 bg-black/40 px-3 py-1 text-[9px] font-black tracking-wide text-white shadow backdrop-blur">
-              {headerSubtitle}
-            </div>
-          </div>
-          <button onClick={handleClose} className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/30 backdrop-blur text-white border border-white/20 flex items-center justify-center transition-all duration-200 hover:scale-110 hover:bg-red-500/80 hover:shadow-[0_0_14px_rgba(255,255,255,0.5)] active:scale-95">
+          <button onClick={handleClose} className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/30 backdrop-blur text-white border border-white/20 flex items-center justify-center transition-all duration-200 hover:scale-110 hover:bg-red-500/80 hover:shadow-[0_0_14px_rgba(255,255,255,0.5)] active:scale-95 z-20">
             <X className="w-4 h-4" />
           </button>
-          <button onClick={() => setMusicOn(v => !v)} aria-label={musicOn ? 'Silenciar música do jogo' : 'Ativar música do jogo'} className="absolute top-2 left-2 w-7 h-7 rounded-full bg-black/25 text-white flex items-center justify-center border border-white/10 transition-all duration-200 hover:scale-110 hover:border-white/60 hover:shadow-[0_0_14px_rgba(255,255,255,0.45)] active:scale-95">
+          <button onClick={() => setMusicOn(v => !v)} aria-label={musicOn ? 'Silenciar música do jogo' : 'Ativar música do jogo'} className="absolute top-2 left-2 w-7 h-7 rounded-full bg-black/25 text-white flex items-center justify-center border border-white/10 transition-all duration-200 hover:scale-110 hover:border-white/60 hover:shadow-[0_0_14px_rgba(255,255,255,0.45)] active:scale-95 z-20">
             {musicOn ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
           </button>
+          {characterSrc && (
+            <div className="relative z-10 flex flex-col items-center pointer-events-none select-none -mb-1" style={{ perspective: '900px' }}>
+              <img
+                src={characterSrc}
+                alt={game.name}
+                draggable={false}
+                className={`h-auto w-[clamp(92px,24vw,118px)] object-contain drop-shadow-[0_10px_16px_rgba(0,0,0,0.6)] ${spinning ? 'animate-characterSpin' : 'animate-characterFloat'}`}
+                style={{ filter: 'drop-shadow(0 10px 12px rgba(0,0,0,0.55)) drop-shadow(0 0 10px rgba(255,255,255,0.18))', transformStyle: 'preserve-3d' }}
+                onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+              />
+              <div className=" -mt-1 h-[7px] w-[64%] rounded-[50%] bg-black/35 blur-[6px]" />
+            </div>
+          )}
+          <div className="relative z-10 mt-1 whitespace-nowrap rounded-full border border-white/20 bg-black/40 px-3 py-1 text-[9px] font-black tracking-wide text-white shadow backdrop-blur">
+            {headerSubtitle}
+          </div>
+          {/* linha superior do rolo central — plataforma visível sem tampar personagem */}
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[92%] max-w-[356px] h-[8px] rounded-full border-y border-white/50 bg-gradient-to-b from-[#8be8ff] via-[#56d8ff] to-[#1e5f86] shadow-[0_4px_10px_rgba(86,216,255,0.5),0_1px_0_rgba(255,255,255,0.9)_inset] z-10" />
         </div>
 
         {/* Rolo central - transparente, área responsiva */}
@@ -201,27 +214,8 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
 
 
           <div className="relative z-10 flex h-full w-[92%] max-w-[356px] flex-col overflow-visible" style={{ background: 'transparent' }}>
-            {/* Personagem 3D apoiado no final da linha superior do rolo central — alinhado igual inferior */}
-            {characterSrc && (
-              <div className="relative z-30 flex h-[0px] w-full justify-center overflow-visible pointer-events-none select-none shrink-0">
-                <div className="absolute bottom-[-8px] left-1/2 flex -translate-x-1/2 flex-col items-center" style={{ perspective: '1000px' }}>
-                  {/* Linha superior do rolo central = inferior — plataforma 3D */}
-                  <div className="absolute -bottom-[6px] left-1/2 h-[9px] w-[112%] -translate-x-1/2 rounded-full border-y border-white/60 bg-gradient-to-b from-[#8be8ff] via-[#56d8ff] to-[#1e5f86] shadow-[0_6px_14px_rgba(86,216,255,0.6),0_2px_0_rgba(255,255,255,0.9)_inset,0_-2px_6px_rgba(0,0,0,0.5)_inset]" />
-                  <div className="absolute -bottom-[6px] left-1/2 h-[4px] w-[112%] -translate-x-1/2 rounded-full bg-white/50 blur-[1.5px]" />
-                  <img
-                    src={characterSrc}
-                    alt={game.name}
-                    draggable={false}
-                    className={`relative h-auto w-[clamp(96px,28vw,138px)] object-contain select-none drop-shadow-[0_14px_18px_rgba(0,0,0,0.65)] [transform:translateZ(24px)_rotateX(5deg)] ${spinning ? 'animate-characterSpin' : 'animate-characterFloat'}`}
-                    style={{ filter: 'drop-shadow(0 14px 16px rgba(0,0,0,0.65)) drop-shadow(0 0 12px rgba(86,216,255,0.35))', transformStyle: 'preserve-3d' }}
-                    onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-                  />
-                  <div className="-mt-1 h-[8px] w-[68%] rounded-[50%] bg-black/40 blur-[6px]" />
-                </div>
-              </div>
-            )}
             <div
-              className={`relative z-10 grid min-h-0 w-full grid-cols-3 self-center overflow-visible ${characterSrc ? 'flex-1 mt-4' : 'flex-1'}`}
+              className="relative z-10 grid min-h-0 w-full flex-1 grid-cols-3 self-center overflow-visible"
               style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}
             >
               {Array.from({ length: SLOT_REEL_COUNT }, (_, reelIdx) => (
