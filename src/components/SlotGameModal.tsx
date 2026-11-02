@@ -191,11 +191,21 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
           </div>
           <div className="absolute top-0 inset-x-0 h-6 opacity-90" style={{ background: game.primaryColor, borderBottom: `4px solid ${game.secondaryColor}` }} />
           <div className="absolute bottom-0 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center">
-            <SlotSymbolArtwork
-              symbol={game.symbols.find(symbol => symbol.isWild) ?? game.symbols[0]}
-              bare
-              className="h-[clamp(100px,28vw,128px)] w-[clamp(100px,28vw,128px)] drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)]"
-            />
+            {characterSrc ? (
+              <img
+                src={characterSrc}
+                alt={game.name}
+                draggable={false}
+                className={`h-[clamp(92px,26vw,124px)] w-[clamp(92px,26vw,124px)] object-contain drop-shadow-[0_10px_14px_rgba(0,0,0,0.55)] ${spinning ? 'animate-characterSpin' : 'animate-characterFloat'}`}
+                onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+              />
+            ) : (
+              <SlotSymbolArtwork
+                symbol={game.symbols.find(symbol => symbol.isWild) ?? game.symbols[0]}
+                bare
+                className="h-[clamp(100px,28vw,128px)] w-[clamp(100px,28vw,128px)] drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)]"
+              />
+            )}
             <div className="-mt-2 whitespace-nowrap rounded-full border border-white/30 bg-black/35 px-2 py-0.5 text-[8px] font-black text-white shadow backdrop-blur">
               {headerSubtitle}
             </div>
@@ -256,22 +266,7 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
                 />
               ))}
               {/* Personagem animado no rolo central — FortuneGo */}
-              {characterSrc && (
-                <div className="pointer-events-none absolute left-1/2 top-[2%] z-30 flex h-[96%] w-[34%] -translate-x-1/2 select-none items-start justify-center">
-                  {/* brilho atrás */}
-                  <div className="absolute top-[18%] h-[62%] w-[88%] rounded-full bg-white/10 blur-2xl" style={{ background: `radial-gradient(circle at 50% 30%, ${game.secondaryColor}88, transparent 70%)` }} />
-                  <img
-                    src={characterSrc}
-                    alt={`${game.name} personagem`}
-                    draggable={false}
-                    className={`relative h-auto max-h-[115%] w-full max-w-[150px] object-contain drop-shadow-[0_12px_22px_rgba(0,0,0,0.7)] ${spinning ? 'animate-characterSpin' : 'animate-characterFloat'}`}
-                    style={{ objectPosition: 'center top' }}
-                    onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-                  />
-                  {/* sombra no chão do rolo */}
-                  <div className="absolute bottom-[14%] h-3 w-[58%] rounded-full bg-black/35 blur-[6px]" />
-                </div>
-              )}
+
             </div>
           </div>
 
