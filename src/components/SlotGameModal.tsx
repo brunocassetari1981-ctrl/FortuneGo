@@ -178,8 +178,8 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
       <div aria-hidden="true" className="absolute inset-0 bg-black/50" />
       <div className="relative z-10 flex h-[100dvh] w-full max-w-[430px] flex-col overflow-hidden border-0 bg-[#1a0e2b] shadow-2xl sm:h-[92vh] sm:rounded-[28px] sm:border-[7px] sm:border-[#111] sm:shadow-[0_20px_60px_rgba(0,0,0,0.9)]">
 
-        {/* Header superior ajustado — limpo acima do rolo (Gemini) */}
-        <div className="relative z-20 h-[14%] min-h-[86px] max-h-[118px] shrink-0 overflow-visible flex items-center justify-center" style={{ background: headerBg }}>
+        {/* Header superior ajustado — compacto para não cobrir rolo central (responsivo) */}
+        <div className="relative z-20 h-[13%] min-h-[78px] max-h-[110px] shrink-0 overflow-visible flex items-center justify-center" style={{ background: headerBg }}>
           <div className="absolute inset-0 overflow-hidden">
             <FortuneArtwork game={game} className="h-full w-full object-cover object-center opacity-55" />
             <div className="absolute inset-0" style={{ background: `linear-gradient(to bottom, ${game.primaryColor}77, ${game.secondaryColor}cc)` }} />
@@ -199,33 +199,32 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
           </button>
         </div>
 
-        {/* Shared three-reel cabinet - só rolo central visível (paytable e banner removidos) */}
-        <div className="flex-1 bg-[#0b1220] relative flex items-center justify-center p-1 pt-2 pb-3 overflow-visible">
+        {/* Rolo central - área responsiva que se ajusta a cada display, alinhamento superior = inferior */}
+        <div className="flex-1 bg-[#0b1220] relative flex items-center justify-center px-1 py-[2.5%] sm:py-3 overflow-visible min-h-[280px]">
 
 
-          <div className="relative z-10 flex h-full w-[94%] max-w-[360px] flex-col overflow-visible" style={{ background: 'transparent' }}>
-            {/* Personagem 3D apoiado no final da linha superior do rolo central — Gemini */}
+          <div className="relative z-10 flex h-full w-[92%] max-w-[356px] flex-col overflow-visible" style={{ background: 'transparent' }}>
+            {/* Personagem 3D apoiado no final da linha superior do rolo central — alinhado igual inferior */}
             {characterSrc && (
-              <div className="relative z-30 flex h-[0px] w-full justify-center overflow-visible pointer-events-none select-none">
-                <div className="absolute bottom-[-10px] left-1/2 flex -translate-x-1/2 flex-col items-center" style={{ perspective: '1000px' }}>
-                  {/* Plataforma superior do rolo central — linha total igual embaixo */}
-                  <div className="absolute -bottom-[7px] left-1/2 h-[10px] w-[118%] -translate-x-1/2 rounded-full border-y border-white/60 bg-gradient-to-b from-[#8be8ff] via-[#56d8ff] to-[#1e5f86] shadow-[0_6px_14px_rgba(86,216,255,0.6),0_2px_0_rgba(255,255,255,0.9)_inset,0_-2px_6px_rgba(0,0,0,0.5)_inset]" />
-                  <div className="absolute -bottom-[7px] left-1/2 h-[4px] w-[118%] -translate-x-1/2 rounded-full bg-white/40 blur-[2px]" />
+              <div className="relative z-30 flex h-[0px] w-full justify-center overflow-visible pointer-events-none select-none shrink-0">
+                <div className="absolute bottom-[-8px] left-1/2 flex -translate-x-1/2 flex-col items-center" style={{ perspective: '1000px' }}>
+                  {/* Linha superior do rolo central = inferior — plataforma 3D */}
+                  <div className="absolute -bottom-[6px] left-1/2 h-[9px] w-[112%] -translate-x-1/2 rounded-full border-y border-white/60 bg-gradient-to-b from-[#8be8ff] via-[#56d8ff] to-[#1e5f86] shadow-[0_6px_14px_rgba(86,216,255,0.6),0_2px_0_rgba(255,255,255,0.9)_inset,0_-2px_6px_rgba(0,0,0,0.5)_inset]" />
+                  <div className="absolute -bottom-[6px] left-1/2 h-[4px] w-[112%] -translate-x-1/2 rounded-full bg-white/50 blur-[1.5px]" />
                   <img
                     src={characterSrc}
                     alt={game.name}
                     draggable={false}
-                    className={`relative h-auto w-[clamp(118px,32vw,158px)] object-contain select-none drop-shadow-[0_14px_18px_rgba(0,0,0,0.65)] [transform:translateZ(28px)_rotateX(6deg)] ${spinning ? 'animate-characterSpin' : 'animate-characterFloat'}`}
+                    className={`relative h-auto w-[clamp(96px,28vw,138px)] object-contain select-none drop-shadow-[0_14px_18px_rgba(0,0,0,0.65)] [transform:translateZ(24px)_rotateX(5deg)] ${spinning ? 'animate-characterSpin' : 'animate-characterFloat'}`}
                     style={{ filter: 'drop-shadow(0 14px 16px rgba(0,0,0,0.65)) drop-shadow(0 0 12px rgba(86,216,255,0.35))', transformStyle: 'preserve-3d' }}
                     onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
                   />
-                  {/* Sombra projetada no rolo */}
-                  <div className=" -mt-1 h-[10px] w-[72%] rounded-[50%] bg-black/45 blur-[7px]" />
+                  <div className="-mt-1 h-[8px] w-[68%] rounded-[50%] bg-black/40 blur-[6px]" />
                 </div>
               </div>
             )}
             <div
-              className={`relative z-10 grid min-h-0 w-full grid-cols-3 self-center overflow-visible ${characterSrc ? 'flex-1 mt-3' : 'flex-1'}`}
+              className={`relative z-10 grid min-h-0 w-full grid-cols-3 self-center overflow-visible ${characterSrc ? 'flex-1 mt-4' : 'flex-1'}`}
               style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}
             >
               {Array.from({ length: SLOT_REEL_COUNT }, (_, reelIdx) => (
@@ -274,8 +273,8 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
           </div>
         </div>
 
-        {/* Bottom control — baixado até final do rolo central para visão perfeita */}
-        <div className="relative flex h-[14%] min-h-[88px] shrink-0 flex-col items-center justify-between overflow-hidden px-3 py-1.5" style={{ background: bottomBg }}>
+        {/* Bottom control — mesma base do topo, sem cobrir rolo central */}
+        <div className="relative flex h-[15%] min-h-[86px] max-h-[108px] shrink-0 flex-col items-center justify-between overflow-hidden px-3 py-2" style={{ background: bottomBg }}>
           <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-yellow-400 to-transparent opacity-60" />
           <div className="absolute -left-6 -bottom-6 w-20 h-20 rounded-full bg-yellow-400/10 blur-xl" />
           <div className="absolute -right-6 -bottom-6 w-20 h-20 rounded-full bg-yellow-400/10 blur-xl" />
