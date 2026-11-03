@@ -305,10 +305,10 @@ export const SLOT_GAMES: SlotGameDef[] = [
 
 // Banner carousel images (from FortuneGo CDN)
 export const BANNERS = [
-  { id: 'b1', img: 'https://o7teb121.121bet7.vip/siteadmin/upload/img/1897206986956238849.avif', title: 'Fortune Tiger Mega Jackpot', subtitle: 'Ganhe até 2500x com o Tigre!', cta: 'JOGAR AGORA', gradient: 'from-orange-600 to-amber-500' },
-  { id: 'b2', img: 'https://o7teb121.121bet7.vip/common/upload/2061256407543259137.avif', title: 'Bônus de Boas-Vindas', subtitle: '100% até R$ 5000 no 1º depósito', cta: 'RESGATAR', gradient: 'from-emerald-600 to-teal-500' },
-  { id: 'b3', img: 'https://o7teb121.121bet7.vip/common/upload/2061253664994668545.avif', title: 'Cashback Diário', subtitle: 'Até 20% de volta todos os dias', cta: 'COLETAR', gradient: 'from-violet-600 to-purple-600' },
-  { id: 'b4', img: 'https://o7teb121.121bet7.vip/common/upload/2099407243396722689.avif', title: 'Torneio Fortune', subtitle: 'R$ 1.000.000 em prêmios semanais', cta: 'PARTICIPAR', gradient: 'from-rose-600 to-red-600' },
+  { id: 'b1', gameId: 'fortune-tiger', img: 'https://o7teb121.121bet7.vip/siteadmin/upload/img/1897206986956238849.avif', title: 'Fortune Tiger Mega Jackpot', subtitle: 'Ganhe até 2500x com o Tigre da Sorte!', cta: 'JOGAR AGORA', gradient: 'from-orange-600 to-amber-500' },
+  { id: 'b2', gameId: 'fortune-rabbit', img: 'https://o7teb121.121bet7.vip/common/upload/2061256407543259137.avif', title: 'Fortune Rabbit Fortune', subtitle: 'Multiplicadores até 2000x com o Coelho!', cta: 'JOGAR AGORA', gradient: 'from-emerald-600 to-teal-500' },
+  { id: 'b3', gameId: 'fortune-dragon', img: 'https://o7teb121.121bet7.vip/common/upload/2061253664994668545.avif', title: 'Fortune Dragon Lendário', subtitle: 'Desperte o Dragão e ganhe até 5000x!', cta: 'JOGAR AGORA', gradient: 'from-violet-600 to-purple-600' },
+  { id: 'b4', gameId: 'wild-bandito', img: 'https://o7teb121.121bet7.vip/common/upload/2099407243396722689.avif', title: 'Wild Bandito no Faroeste', subtitle: 'Ouro e Wilds colossais com o Bandido!', cta: 'JOGAR AGORA', gradient: 'from-rose-600 to-red-600' },
 ];
 
 // Promo quick-access tiles (small icons row like FortuneGo)

@@ -489,8 +489,15 @@ export default function App() {
           )
         ) : view === 'lobby' ? (
           <>
-            <BannerCarousel onClaimPromo={(id) => {
-              if (id.startsWith('q') || id.startsWith('b')) {
+            <BannerCarousel onClaimPromo={(gameId) => {
+              // banner agora abre direto o jogo do nome (JOGAR AGORA)
+              const game = SLOT_GAMES.find(g => g.id === gameId);
+              if (game) {
+                setActiveSlotGame(game);
+                sound.playCoin();
+                return;
+              }
+              if (gameId.startsWith('q') || gameId.startsWith('b')) {
                 handleDeposit(2000);
               }
             }} />

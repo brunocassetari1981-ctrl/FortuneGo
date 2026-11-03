@@ -36,7 +36,7 @@ export const BannerCarousel: React.FC<BannerCarouselProps> = ({ onClaimPromo }) 
             <p className="text-white/90 text-xs sm:text-sm font-semibold mt-1 drop-shadow">{banner.subtitle}</p>
             <div className="flex items-center gap-2 mt-3">
               <button
-                onClick={() => onClaimPromo?.(banner.id)}
+                onClick={() => onClaimPromo?.((banner as any).gameId || banner.id)}
                 className="px-4 py-2 rounded-full bg-white text-[#164633] font-black text-xs sm:text-sm shadow-lg hover:bg-amber-50 active:scale-95 flex items-center gap-1.5 cursor-pointer"
               >
                 {banner.cta} <ChevronRight className="w-3.5 h-3.5" />
