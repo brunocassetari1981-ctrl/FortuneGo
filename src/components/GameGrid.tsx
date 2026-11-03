@@ -12,7 +12,7 @@ interface GameGridProps {
 
 export const GameGrid: React.FC<GameGridProps> = ({ category, onPlay, onToggleFav, favSet }) => {
   const games = getGamesByCategory(category);
-  const loopIds = new Set(['fortune-tiger', 'fortune-rabbit', 'fortune-dragon', 'fortune-ox', 'fortune-rabbit-2', 'fortune-snake', 'pinata-wins', 'wild-bandito']);
+  const loopIds = new Set(['fortune-tiger', 'fortune-rabbit', 'fortune-dragon', 'dragon-hatch', 'fortune-ox', 'fortune-rabbit-2', 'fortune-snake', 'pinata-wins', 'wild-bandito']);
 
   // FortuneGo shows section headline with icon + Tudo button
   const categoryLabel = category === 'Popular' ? 'Popular' : category;
@@ -39,7 +39,7 @@ export const GameGrid: React.FC<GameGridProps> = ({ category, onPlay, onToggleFa
             className="group relative rounded-2xl bg-[#132e23] border border-white/10 overflow-hidden shadow-md hover:shadow-xl hover:border-amber-400/30 hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col"
             onClick={() => onPlay(game)}
           >
-            {/* Poster image — 8 loops com vídeo em loop na tela inicial */}
+            {/* Poster image — 9 loops com vídeo em loop na tela inicial */}
             <div className="relative aspect-[1/1.32] overflow-hidden bg-[#194C38]">
               {loopIds.has(game.id) ? (
                 <video
