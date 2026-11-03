@@ -1,0 +1,6 @@
+{
+  "name": "FortuneGo",
+  "description": "An exciting Fortune Go adventure featuring lucky wheel spins, multiplier cascades, board progression, mini-games, and daily missions.",
+  "permissions": [],
+  "capabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
