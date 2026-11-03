@@ -300,35 +300,7 @@ export const SLOT_GAMES: SlotGameDef[] = [
     ]
   },
 
-  {
-    id: 'ways-museum',
-    name: 'Museum Mystery',
-    provider: 'PG Soft',
-    audio: '/audio/default_bgm.ogg',
-    thumb: 'https://o7teb121.121bet7.vip/common/upload/2061272094419980289.avif',
-    banner: 'https://o7teb121.121bet7.vip/common/upload/2061272094419980289.avif',
-    primaryColor: '#1E293B',
-    secondaryColor: '#475569',
-    bgGradient: 'from-slate-800 via-slate-700 to-slate-800',
-    reels: 3,
-    rows: 3,
-    paylines: 5,
-    rtp: 96.71,
-    volatility: 'Alta',
-    category: ['Popular', 'Slots'],
-    description: 'Mistérios do museu com símbolos que se transformam em wilds!',
-    symbols: [
-      { id: 'detective', emoji: '🕵️', name: 'Detetive', payout: { 3: 45 }, isWild: true, color: '#1E293B' },
-      { id: 'jewel', emoji: '💎', name: 'Joia', payout: { 3: 25 }, color: '#06B6D4' },
-      { id: 'statue', emoji: '🗿', name: 'Estátua', payout: { 3: 20 }, color: '#78716C' },
-      { id: 'mask', emoji: '🎭', name: 'Máscara', payout: { 3: 15 }, color: '#F59E0B' },
-      { id: 'lens', emoji: '🔍', name: 'Lupa', payout: { 3: 12 }, color: '#EAB308' },
-      { id: 'key', emoji: '🔑', name: 'Chave Ouro', payout: { 3: 10 }, color: '#FBBF24' },
-      { id: 'book', emoji: '📜', name: 'Pergaminho', payout: { 3: 8 }, color: '#B45309' },
-      { id: 'coin', emoji: '🪙', name: 'Moeda Antiga', payout: { 3: 18 }, color: '#FFD700' },
-      { id: 'star', emoji: '⭐', name: 'Orbe Mistério', payout: { 3: 20 }, isScatter: true, color: '#FFD700' },
-    ]
-  },
+
 ];
 
 // Banner carousel images (from FortuneGo CDN)
