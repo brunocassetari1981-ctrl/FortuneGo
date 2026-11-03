@@ -23,7 +23,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
@@ -45,31 +45,11 @@ jobs:
 
       - name: Build APK Debug
         working-directory: android
-        run: |
-          set -o pipefail
-          ./gradlew assembleDebug --stacktrace 2>&1 | tee ../gradle.log
-          echo "GRADLE_EXIT:${PIPESTATUS[0]}" | tee -a ../gradle.log
+        run: ./gradlew assembleDebug --stacktrace
 
       - name: Upload APK
-        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: FortuneGo-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
-
-      - name: Save gradle log on failure
-        if: failure()
-        run: |
-          echo "=== GRADLE LOG TAIL ==="
-          tail -n 800 ../gradle.log 2>&1 | head -n 800
-          cp ../gradle.log ./gradle.log 2>&1 || cp android/../gradle.log ./gradle.log || true
-          ls -lh gradle.log
-          # also try android build log
-          cat android/app/build/outputs/logs/*.log 2>&1 | head -n 200 || true
-          git config user.email "ci@fortunego.local"
-          git config user.name "FortuneGo CI"
-          git add gradle.log || true
-          git commit -m "ci: gradle log falha" || echo "nothing"
-          git push origin HEAD:arena/6c53608a-fortunego || echo "push failed"
-          cat gradle.log | tail -n 200
