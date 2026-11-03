@@ -440,7 +440,7 @@ export default function App() {
 
   // Bottom tab handling - Perfil now has full Registro/Perfil flow (perfil mostra Conta/Saldo/Saque/Depósito)
   const handleBottomNav = (id: string) => {
-    if (id === 'deposit') { setShowDeposit(true); return; }
+    if (id === 'deposit') { setBottomTab('perfil'); setPerfilSubView('deposito'); setView('lobby'); return; }
     if (id === 'perfil') {
       setBottomTab('perfil');
       setPerfilSubView('perfil');
@@ -470,7 +470,7 @@ export default function App() {
         onOpenStore={() => setShowStore(true)}
         onOpenJackpotInfo={() => setShowJackpotInfo(true)}
         pendingMissionsCount={pendingMissionsCount}
-        onDeposit={() => setShowDeposit(true)}
+        onDeposit={() => { setBottomTab('perfil'); setPerfilSubView('deposito'); setView('lobby'); }}
       />
 
       {/* Main content area with bottom tab padding */}
@@ -547,7 +547,7 @@ export default function App() {
         )}
       </main>
 
-      <BottomTabBar active={bottomTab} onChange={handleBottomNav} onDeposit={() => setShowDeposit(true)} />
+      <BottomTabBar active={bottomTab} onChange={handleBottomNav} onDeposit={() => { setBottomTab('perfil'); setPerfilSubView('deposito'); setView('lobby'); }} />
 
       {/* All slot titles share the same responsive cabinet and controls. */}
       <SlotGameModal
