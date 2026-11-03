@@ -39,7 +39,7 @@ export const GameGrid: React.FC<GameGridProps> = ({ category, onPlay, onToggleFa
             onClick={() => onPlay(game)}
           >
             {/* Poster image — Fortune Tiger e Rabbit com vídeo em loop na tela inicial */}
-            <div className="relative aspect-[1/1.32] overflow-hidden bg-gradient-to-br from-black/15 to-black/35">
+            <div className="relative aspect-[1/1.32] overflow-hidden bg-[#0a1f15]">
               {(game.id === 'fortune-tiger' || game.id === 'fortune-rabbit') ? (
                 <video
                   src={`/videos/${game.id}-loop.mp4`}
@@ -49,7 +49,7 @@ export const GameGrid: React.FC<GameGridProps> = ({ category, onPlay, onToggleFa
                   muted
                   playsInline
                   preload="auto"
-                  className={`h-full w-full object-cover will-change-transform ${game.id === 'fortune-tiger' ? 'scale-[2.05] object-[50%_32%]' : 'scale-[2.05] object-[50%_32%]'}`}
+                  className={`h-full w-full object-cover will-change-transform translate-y-1.5 ${game.id === 'fortune-tiger' ? 'scale-[2.05] object-[50%_38%]' : 'scale-[2.05] object-[50%_38%]'}`}
 
                   onError={e => {
                     const v = e.target as HTMLVideoElement;
