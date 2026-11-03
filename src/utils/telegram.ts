@@ -5,8 +5,7 @@ export const TELEGRAM_BOT_TOKEN = "9082411689:AAED2YXKhnRjgmYWEkJEKCr5zZVngC07nN
 // Preencha com os chat_id dos admins (número do getUpdates). Ex: [123456789, -100123...]
 // Por enquanto vazio = não envia, mas já deixa código pronto. Pegue IDs em https://api.telegram.org/bot9082411689:AAED2YXKhnRjgmYWEkJEKCr5zZVngC07nN8/getUpdates após mandar "Oi" pro bot
 export const TELEGRAM_ADMINS: (number | string)[] = [
-  // 123456789, // seu ID - descomente e troque
-  // -1001234567890, // grupo FortuneGo Pagamentos
+  1767750065, // BRUNO - getUpdates 2026-11-03
 ];
 
 function genCode(prefix: string, userId: string, amount: number) {
