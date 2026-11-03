@@ -323,14 +323,6 @@ export const SlotSymbolArtwork: React.FC<SlotSymbolArtworkProps> = ({ symbol, cl
   const accent = symbol.isWild ? '#fef08a' : '#ffffff';
   const kind = getArtKind(symbol.id.toLowerCase());
 
-  if (symbol.imageUrl) {
-    return (
-      <div className={`relative flex items-center justify-center ${className}`} style={style}>
-        <img src={symbol.imageUrl} alt={symbol.name} className="w-full h-full object-contain drop-shadow-xl scale-110" />
-      </div>
-    );
-  }
-
   if (bare) {
     return (
       <svg
@@ -341,7 +333,9 @@ export const SlotSymbolArtwork: React.FC<SlotSymbolArtworkProps> = ({ symbol, cl
         preserveAspectRatio="xMidYMid meet"
         focusable="false"
       >
-        <SymbolMotif kind={kind} id={symbol.id.toLowerCase()} color={color} accent={accent} />
+        <g transform="scale(1.15) translate(-9, -9)">
+          <SymbolMotif kind={kind} id={symbol.id.toLowerCase()} color={color} accent={accent} />
+        </g>
       </svg>
     );
   }
@@ -375,17 +369,17 @@ export const SlotSymbolArtwork: React.FC<SlotSymbolArtworkProps> = ({ symbol, cl
           </filter>
         )}
       </defs>
-      <circle cx="64" cy="64" r="59" fill={`url(#${id}-back)`} stroke={`url(#${id}-rim)`} strokeWidth="6" />
-      <circle cx="64" cy="64" r="51" fill="none" stroke="#fff" strokeOpacity=".24" strokeWidth="2" />
-      <path d="M24 50q8-24 30-29" fill="none" stroke="#fff" strokeOpacity=".42" strokeWidth="4" strokeLinecap="round" />
+      <circle cx="64" cy="64" r="61" fill={`url(#${id}-back)`} stroke={`url(#${id}-rim)`} strokeWidth="5" />
+      <circle cx="64" cy="64" r="54" fill="none" stroke="#fff" strokeOpacity=".25" strokeWidth="2" />
       {simplified ? (
-        <SymbolMotif kind={kind} id={symbol.id.toLowerCase()} color={color} accent={accent} />
+        <g transform="scale(1.15) translate(-9, -9)">
+          <SymbolMotif kind={kind} id={symbol.id.toLowerCase()} color={color} accent={accent} />
+        </g>
       ) : (
-        <g filter={`url(#${id}-glow)`}>
+        <g filter={`url(#${id}-glow)`} transform="scale(1.18) translate(-10, -10)">
           <SymbolMotif kind={kind} id={symbol.id.toLowerCase()} color={color} accent={accent} />
         </g>
       )}
-      <path d="m101 26 2 6 6 2-6 2-2 6-2-6-6-2 6-2zM27 92l1.5 4 4 1.5-4 1.5-1.5 4-1.5-4-4-1.5 4-1.5z" fill="#fff6c7" />
     </svg>
   );
 };
