@@ -50,7 +50,7 @@ export const GameGrid: React.FC<GameGridProps> = ({ category, onPlay, onToggleFa
                   muted
                   playsInline
                   preload="auto"
-                  className={`h-full w-full object-cover will-change-transform translate-y-1.5 ${game.id === 'fortune-tiger' ? 'scale-[2.05] object-[50%_38%]' : game.id === 'fortune-dragon' ? 'scale-[2.05] object-[50%_42%]' : 'scale-[2.05] object-[50%_38%]'}`}
+                  className={`h-full w-full object-cover will-change-transform ${game.id === 'pinata-wins' ? 'scale-[2.45] object-[50%_32%] -translate-y-1' : game.id === 'fortune-tiger' ? 'scale-[2.05] object-[50%_38%] translate-y-1.5' : game.id === 'fortune-dragon' ? 'scale-[2.05] object-[50%_42%] translate-y-1.5' : 'scale-[2.05] object-[50%_38%] translate-y-1.5'}`}
 
                   onError={e => {
                     const v = e.target as HTMLVideoElement;
