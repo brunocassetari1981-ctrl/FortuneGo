@@ -15,8 +15,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
-          cache: npm
+          node-version: 20
 
       - uses: actions/setup-java@v4
         with:
@@ -27,16 +26,22 @@ jobs:
         uses: android-actions/setup-android@v3
         with:
           cmdline-tools-version: 11076708
-          packages: 'platform-tools platforms;android-34 build-tools;34.0.0 ndk;25.1.8937393'
+          packages: 'platform-tools platforms;android-34 build-tools;34.0.0'
 
       - name: Accept Android licenses
         run: yes | sdkmanager --licenses || true
 
       - name: Install deps
-        run: npm ci
+        run: npm ci --loglevel=verbose
 
-      - name: Build web
-        run: npm run build
+      - name: Build web (verbose)
+        run: |
+          node -v
+          npm -v
+          npx tsc --version
+          npm run build 2>&1 | tee build.log
+          echo "=== BUILD LOG TAIL ==="
+          tail -n 200 build.log
 
       - name: Sync Capacitor Android
         run: npx cap sync android
@@ -51,3 +56,10 @@ jobs:
           name: FortuneGo-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
