@@ -1,8 +1,6 @@
 // NOTA: token em frontend fica exposto no APK/dist. Use apenas para notificação admin manual.
-// Para produção real, mova para backend proxy. Token fornecido pelo usuário.
 export const TELEGRAM_BOT_TOKEN = "9082411689:AAED2YXKhnRjgmYWEkJEKCr5zZVngC07nN8";
 
-// Preencha com os chat_id dos admins (número do getUpdates). Ex: [123456789, -100123...]
 export const TELEGRAM_ADMINS: (number | string)[] = [
   1767750065, // BRUNO - getUpdates 2026-11-03
 ];
@@ -20,19 +18,34 @@ export async function notifyTelegram(text: string, replyMarkup?: any) {
     return;
   }
   const token = TELEGRAM_BOT_TOKEN;
-  const promises = TELEGRAM_ADMINS.map(chat_id =>
-    fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+  const promises = TELEGRAM_ADMINS.map(chat_id => {
+    const payload = {
+      chat_id,
+      text,
+      parse_mode: "HTML",
+      ...(replyMarkup ? { reply_markup: replyMarkup } : {})
+    };
+
+    const targetUrl = `https://api.telegram.org/bot${token}/sendMessage`;
+    // Usar CORS proxy para evitar bloqueio de CORS no navegador / APK
+    const corsProxyUrl = `https://corsproxy.io/?` + encodeURIComponent(targetUrl);
+
+    return fetch(corsProxyUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id,
-        text,
-        parse_mode: "HTML",
-        ...(replyMarkup ? { reply_markup: replyMarkup } : {})
-      }),
-    }).then(r => r.json()).catch(e => ({ ok:false, error:String(e)}))
-  );
-  try { await Promise.all(promises); } catch {}
+      body: JSON.stringify(payload),
+    }).then(r => r.json()).catch(() => {
+      // Fallback para fetch direto caso o proxy falhe
+      return fetch(targetUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }).then(r => r.json()).catch(e => ({ ok: false, error: String(e) }));
+    });
+  });
+  try { await Promise.all(promises); } catch (err) {
+    console.error("[Telegram] Erro ao enviar notificação:", err);
+  }
 }
 
 // Helpers prontos com botão inline para creditar direto no Telegram
