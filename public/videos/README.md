@@ -1,6 +1,8 @@
-# Vídeo Loop Fortune Tiger
-Coloque o arquivo do Drive aqui como:
-public/videos/fortune-tiger-loop.mp4
+# Vídeos em Loop - Tela Inicial
 
-O GameGrid já está configurado para exibir este vídeo em loop no lugar do tigre na tela inicial (Fortune Tiger).
-Formato recomendado: MP4 H.264, 720x720 ou 1080x1080, <5MB, sem áudio (muted autoplay).
+Coloque os arquivos do Drive aqui com o padrão:
+- public/videos/fortune-tiger-loop.mp4  → Fortune Tiger (já ativo 178KB)
+- public/videos/fortune-rabbit-loop.mp4 → Fortune Rabbit (ao lado do Tigre) ← PRÓXIMO
+
+Formato: MP4 H.264, 720x720 ou 1080x1080, <5MB, sem áudio (muted autoplay).
+GameGrid já está configurado para tocar em loop automaticamente.

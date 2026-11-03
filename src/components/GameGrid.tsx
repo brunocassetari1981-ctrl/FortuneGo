@@ -38,18 +38,18 @@ export const GameGrid: React.FC<GameGridProps> = ({ category, onPlay, onToggleFa
             className="group relative rounded-2xl bg-[#132e23] border border-white/10 overflow-hidden shadow-md hover:shadow-xl hover:border-amber-400/30 hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col"
             onClick={() => onPlay(game)}
           >
-            {/* Poster image — Fortune Tiger com vídeo em loop na tela inicial */}
+            {/* Poster image — Fortune Tiger e Rabbit com vídeo em loop na tela inicial */}
             <div className="relative aspect-[1/1.32] overflow-hidden bg-gradient-to-br from-black/15 to-black/35">
-              {game.id === 'fortune-tiger' ? (
+              {(game.id === 'fortune-tiger' || game.id === 'fortune-rabbit') ? (
                 <video
-                  src="/videos/fortune-tiger-loop.mp4"
+                  src={`/videos/${game.id}-loop.mp4`}
                   poster={game.thumb}
                   autoPlay
                   loop
                   muted
                   playsInline
                   preload="auto"
-                  className="h-full w-full object-cover scale-[2.05] object-[50%_32%] will-change-transform"
+                  className={`h-full w-full object-cover will-change-transform ${game.id === 'fortune-tiger' ? 'scale-[2.05] object-[50%_32%]' : 'scale-[1.9] object-[50%_35%]'}`}
 
                   onError={e => {
                     const v = e.target as HTMLVideoElement;
@@ -62,8 +62,8 @@ export const GameGrid: React.FC<GameGridProps> = ({ category, onPlay, onToggleFa
               <img
                 src={game.thumb}
                 alt={game.name}
-                className={`h-full w-full object-cover will-change-transform ${game.id === 'fortune-tiger' ? 'hidden' : 'animate-grid-dance'}`}
-                style={game.id === 'fortune-tiger' ? { display: 'none' } as React.CSSProperties : undefined}
+                className={`h-full w-full object-cover will-change-transform ${game.id === 'fortune-tiger' || game.id === 'fortune-rabbit' ? 'hidden' : 'animate-grid-dance'}`}
+                style={game.id === 'fortune-tiger' || game.id === 'fortune-rabbit' ? { display: 'none' } as React.CSSProperties : undefined}
                 loading="lazy"
                 onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
