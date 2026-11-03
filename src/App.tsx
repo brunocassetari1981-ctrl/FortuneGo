@@ -438,14 +438,12 @@ export default function App() {
 
   const pendingMissionsCount = state.missions.filter(m => m.current >= m.target && !m.claimed).length;
 
-  // Bottom tab handling - Perfil now has full Registro/Perfil flow
+  // Bottom tab handling - Perfil now has full Registro/Perfil flow (perfil mostra Conta/Saldo/Saque/Depósito)
   const handleBottomNav = (id: string) => {
     if (id === 'deposit') { setShowDeposit(true); return; }
     if (id === 'perfil') {
       setBottomTab('perfil');
-      // Se já tem conta, vai direto pra Minha Conta (login -> Minha Conta)
-      if (fortuneUser) setPerfilSubView('minhaConta');
-      else setPerfilSubView('perfil');
+      setPerfilSubView('perfil');
       setView('lobby');
       return;
     }
