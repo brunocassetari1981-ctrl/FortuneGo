@@ -176,46 +176,17 @@ export const PerfilScreen: React.FC<{ user: FortuneUser; onOpenDeposito: ()=>voi
           </div>
         </div>
 
-        {/* VIP */}
-        <div className="mx-3 mt-3 rounded-2xl bg-gradient-to-b from-[#4a3720]/90 to-[#3d2e18]/90 border border-[#8c6a2a]/30 p-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#c9a24a] to-[#8c6a2a] flex items-center justify-center text-white font-black">V</div>
-              <div>
-                <p className="text-white/80 text-xs">Siga VIP1 Ainda precisa apostar 100 →</p>
-                <p className="text-white font-black text-sm flex items-center gap-2">VIP 0 <span className="text-[#c9a24a] text-xs font-normal">Aposta necessária</span> <span className="text-[#c9a24a] text-xs ml-auto">0/100</span></p>
-              </div>
-            </div>
-          </div>
-          <div className="h-1.5 bg-black/30 rounded-full mt-2"><div className="h-full w-0 bg-[#c9a24a] rounded-full"/></div>
-        </div>
-
-        <div className="mx-3 mt-3 rounded-xl bg-[#3d2e18] border border-[#8c6a2a]/30 flex items-center justify-between px-3 py-3">
-          <span className="text-white/80 text-sm flex items-center gap-2"><span className="bg-[#c9a24a] text-black text-[10px] font-black px-1 rounded">R$%</span> Rebate do site</span>
-          <span className="text-white font-bold flex items-center gap-1">R$ 0 <ChevronRight className="w-4 h-4 text-white/40"/></span>
-        </div>
-
-        <div className="mx-3 mt-3 rounded-xl overflow-hidden border border-[#c9a24a]/20">
-          <img src="https://o7teb121.121bet7.vip/siteadmin/upload/img/1897206986956238849.avif" alt="bonus" className="w-full h-24 object-cover" onError={e=> (e.currentTarget.style.display='none')} />
-          <div className="bg-gradient-to-r from-[#4a3720] to-[#c9a24a] p-2 text-center">
-            <p className="text-white font-black text-xs">REVELE SEUS PRÓPRIOS BONUS SUPERALTOS <span className="text-[#ffd700]">R$8.888</span></p>
-          </div>
-        </div>
 
         {/* Menu */}
         <div className="mx-3 mt-3 rounded-2xl bg-[#3d2e18]/80 border border-white/5 overflow-hidden">
           {[
-            { label: 'Relatórios', icon: '📊', onClick: onOpenSaque },
-            { label: 'Convidar', sub: 'Convide 1 pessoa bônus R$ 50', icon: '🤝' },
-            { label: 'Código de Resgate', icon: '🎁' },
             { label: 'Suporte', icon: '🎧' },
-            { label: 'Minha Conta', icon: '🛡️', onClick: onOpenMinhaConta, highlight: true }, // Centro de Segurança -> Minha Conta
+            { label: 'Minha Conta', icon: '🛡️', onClick: onOpenMinhaConta, highlight: true },
             { label: 'Sair', icon: '🚪', onClick: onLogout },
           ].map(item=>(
             <button key={item.label} onClick={item.onClick} className={`w-full flex items-center gap-3 px-4 py-3.5 border-b border-white/5 last:border-0 text-left hover:bg-white/5 ${item.highlight ? 'bg-[#c9a24a]/10' : ''}`}>
               <span className="w-6 h-6 rounded bg-[#c9a24a]/20 flex items-center justify-center text-[14px]">{item.icon}</span>
               <span className="flex-1 text-white text-sm font-medium">{item.label}</span>
-              {item.sub && <span className="text-[#c9a24a] text-[11px] hidden sm:inline">{item.sub}</span>}
               <ChevronRight className="w-4 h-4 text-white/30" />
             </button>
           ))}
