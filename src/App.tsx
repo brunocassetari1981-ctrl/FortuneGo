@@ -50,6 +50,34 @@ export default function App() {
 
   const currentPawn: Pawn = AVAILABLE_PAWNS.find(p => p.id === state.currentPawnId) || AVAILABLE_PAWNS[0];
 
+  // Handle admin credit query params from Telegram button click
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('admin_credit') === '1') {
+      const targetUserId = params.get('userId');
+      const amountStr = params.get('amount');
+      const code = params.get('code');
+
+      if (amountStr) {
+        const amt = parseFloat(amountStr);
+        if (!isNaN(amt) && amt > 0) {
+          const user = loadUser();
+          if (user) {
+            const updatedUser = { ...user, balance: user.balance + amt };
+            saveUser(updatedUser);
+            setFortuneUser(updatedUser);
+            setState(s => ({ ...s, coins: s.coins + amt * 10 }));
+            pushToast(`✅ Depósito Creditado!`, `R$ ${amt} adicionados com sucesso (Código: ${code})`);
+            alert(`✅ SUCESSO! Depósito de R$ ${amt} (Código: ${code}) creditado com sucesso!`);
+          } else {
+            alert(`✅ Depósito de R$ ${amt} (Código: ${code}) processado! Faça login na sua conta para ver o saldo.`);
+          }
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      }
+    }
+  }, []);
+
   // Persist
   useEffect(() => {
     saveGameState(state);

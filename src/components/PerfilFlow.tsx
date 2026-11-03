@@ -274,6 +274,12 @@ export const DepositoSaqueScreen: React.FC<{ user: FortuneUser; onBack: ()=>void
   const [tab, setTab] = useState<'deposito' | 'saque'>(mode);
   const [canal, setCanal] = useState('PIX-1');
   const [valor, setValor] = useState('');
+  const [showPixModal, setShowPixModal] = useState(false);
+  const [pendingDeposit, setPendingDeposit] = useState<{ amount: number; extra: number; code: string } | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const pixKey = "43999069735"; // Chave PIX oficial
+
   const quickDeposito = [
     { v: 10, extra: 0.5 }, { v: 30, extra: 1.5 }, { v: 50, extra: 2.5 },
     { v: 100, extra: 3.5 }, { v: 500, extra: 25 }, { v: 1000, extra: 35 },
@@ -281,17 +287,24 @@ export const DepositoSaqueScreen: React.FC<{ user: FortuneUser; onBack: ()=>void
   ];
   const quickSaque = [20,50,100,200,500,1000];
 
-  const handleDeposito = (amount?: number) => {
+  const handleDepositoClick = (amount?: number) => {
     const amt = amount ?? parseInt(valor || '0');
-    if (amt < 10 || amt > 15000) { alert('Valor R$10 ~ R$15000'); return; }
-    // find extra
+    if (amt < 10 || amt > 15000) { alert('Digite um valor entre R$ 10 e R$ 15.000'); return; }
     const extra = quickDeposito.find(q=>q.v===amt)?.extra || 0;
     const code = genDepositCode(user.userId, amt);
-    onBalanceChange(amt + extra);
+
+    setPendingDeposit({ amount: amt, extra, code });
     setValor('');
     notifyDeposito(user, canal, amt, code).catch(()=>{});
-    alert(`Depósito PIX ${canal} de R$${amt} (+R$${extra} bônus) código ${code}!\n\nChave Pix: 439990669735\nCole o código "${code}" na descrição do Pix e toque Já paguei. Admin notificado no Telegram.`);
+    setShowPixModal(true);
   };
+
+  const copyPixKey = () => {
+    navigator.clipboard.writeText(pixKey);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 3000);
+  };
+
   const handleSaque = () => {
     const amt = parseInt(valor || '0');
     if (amt < 20 || amt > 15000) { alert('Saque R$20 ~ R$15000'); return; }
@@ -343,14 +356,14 @@ export const DepositoSaqueScreen: React.FC<{ user: FortuneUser; onBack: ()=>void
 
             <div className="grid grid-cols-3 gap-2 px-3 mt-3">
               {quickDeposito.map(q=>(
-                <button key={q.v} onClick={()=>handleDeposito(q.v)} className="relative bg-[#132e23] border border-white/5 rounded-xl py-3 flex flex-col items-center">
+                <button key={q.v} onClick={()=>handleDepositoClick(q.v)} className="relative bg-[#132e23] border border-white/5 rounded-xl py-3 flex flex-col items-center cursor-pointer">
                   <span className="absolute -top-1 -right-1 bg-[#194C38] text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">+{q.extra}</span>
                   <span className="text-white font-bold text-sm">R$ {q.v}</span>
                 </button>
               ))}
             </div>
 
-            <button onClick={()=>handleDeposito()} className="mx-3 mt-6 py-3 rounded-xl bg-gradient-to-r from-[#194C38] via-[#164633] to-[#113829] text-white font-black">Depósito</button>
+            <button onClick={()=>handleDepositoClick()} className="mx-3 mt-6 py-3 rounded-xl bg-gradient-to-r from-[#194C38] via-[#164633] to-[#113829] text-white font-black cursor-pointer">Depósito</button>
             <p className="text-center text-white/30 text-[10px] mt-2">Meu Saldo: R$ {user.balance.toFixed(0)} • PIX {canal} instantâneo</p>
           </>
         ) : (
@@ -367,15 +380,77 @@ export const DepositoSaqueScreen: React.FC<{ user: FortuneUser; onBack: ()=>void
               </div>
               <div className="flex gap-2 mt-2 flex-wrap">
                 {quickSaque.map(v=>(
-                  <button key={v} onClick={()=>setValor(String(v))} className="px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-white/70 text-xs">R$ {v}</button>
+                  <button key={v} onClick={()=>setValor(String(v))} className="px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-white/70 text-xs cursor-pointer">R$ {v}</button>
                 ))}
               </div>
-              <button onClick={handleSaque} className="w-full mt-6 py-3 rounded-xl bg-gradient-to-r from-[#194C38] via-[#164633] to-[#113829] text-white font-black">Saque</button>
+              <button onClick={handleSaque} className="w-full mt-6 py-3 rounded-xl bg-gradient-to-r from-[#194C38] via-[#164633] to-[#113829] text-white font-black cursor-pointer">Saque</button>
               <p className="text-center text-white/30 text-[11px] mt-2">PIX: {user.pixKey ? `${user.pixKey} (${user.pixType})` : 'cadastre em Minha Conta'}</p>
             </div>
           </>
         )}
       </div>
+
+      {/* PIX Deposit Modal with copy key and motivational phrase */}
+      {showPixModal && pendingDeposit && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-gradient-to-b from-[#0f2d21] via-[#0a1f15] to-[#071710] border-2 border-emerald-500/50 rounded-3xl max-w-sm w-full p-6 shadow-2xl relative text-center">
+
+            <div className="w-12 h-12 mx-auto mb-3 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-bold text-xl">
+              ⚡
+            </div>
+
+            <h3 className="text-xl font-fredoka font-black text-white mb-1">
+              PIX de R$ {pendingDeposit.amount}
+            </h3>
+            <p className="text-xs text-emerald-400 font-semibold mb-4">
+              Canal {canal} {pendingDeposit.extra > 0 ? `(Bônus +R$ ${pendingDeposit.extra})` : ''}
+            </p>
+
+            {/* Motivational message as requested */}
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3.5 mb-4 shadow-inner">
+              <p className="text-amber-300 font-bold text-xs">
+                🌟 "Acredite que sua hora vai chegar!"
+              </p>
+              <p className="text-slate-300 text-[11px] mt-1.5 leading-relaxed">
+                Copie a chave PIX abaixo, faça o pagamento no seu banco e aguarde. Assim que o pagamento for confirmado, o administrador creditará seu saldo!
+              </p>
+            </div>
+
+            {/* PIX Key Box */}
+            <div className="bg-black/50 border border-slate-700 rounded-2xl p-3.5 mb-4">
+              <span className="text-[10px] uppercase tracking-wider text-slate-400 block mb-1 font-bold">Chave PIX Oficial</span>
+              <div className="text-lg font-black text-amber-300 select-all tracking-wide">
+                {pixKey}
+              </div>
+            </div>
+
+            {/* Copy Button */}
+            <button
+              onClick={copyPixKey}
+              className={`w-full py-3.5 rounded-xl font-black text-sm flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer ${
+                copied
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-gradient-to-r from-emerald-600 to-green-500 text-white hover:brightness-110 active:scale-95'
+              }`}
+            >
+              <Copy className="w-4 h-4" />
+              {copied ? 'Chave PIX Copiada com Sucesso!' : 'Copiar Chave PIX'}
+            </button>
+
+            {/* Close / Done */}
+            <button
+              onClick={() => {
+                setShowPixModal(false);
+                setPendingDeposit(null);
+              }}
+              className="mt-3 w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold border border-slate-700 cursor-pointer"
+            >
+              Já copieí / Aguardar Crédito
+            </button>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 };
