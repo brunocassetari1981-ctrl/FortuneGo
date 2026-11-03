@@ -24,12 +24,10 @@ export const SLOT_GAMES: SlotGameDef[] = [
       { id: 'tiger', emoji: '🐯', name: 'Tigre', payout: { 3: 50 }, isWild: true, color: '#FF7A00' },
       { id: 'ingot', emoji: '🪙', name: 'Lingote', payout: { 3: 20 }, color: '#FFD700' },
       { id: 'coinbag', emoji: '💰', name: 'Saco', payout: { 3: 15 }, color: '#FFA500' },
-      { id: 'lantern', emoji: '🏮', name: 'Lanterna', payout: { 3: 10 }, color: '#FF4500' },
       { id: 'firecracker', emoji: '🧨', name: 'Fogos', payout: { 3: 8 }, color: '#DC2626' },
       { id: 'orange', emoji: '🍊', name: 'Laranja', payout: { 3: 5 }, color: '#FB923C' },
       { id: 'envelope', emoji: '🧧', name: 'Envelope', payout: { 3: 5 }, color: '#EF4444' },
       { id: 'pearl', emoji: '🔮', name: 'Pérola', payout: { 3: 7 }, color: '#A78BFA' },
-      { id: 'fan', emoji: '🪭', name: 'Leque', payout: { 3: 6 }, color: '#EC4899' },
     ]
      },  {id: 'fortune-rabbit',
     name: 'Fortune Rabbit',
