@@ -12,6 +12,7 @@ interface GameGridProps {
 
 export const GameGrid: React.FC<GameGridProps> = ({ category, onPlay, onToggleFav, favSet }) => {
   const games = getGamesByCategory(category);
+  const loopIds = new Set(['fortune-tiger', 'fortune-rabbit', 'fortune-dragon']);
 
   // FortuneGo shows section headline with icon + Tudo button
   const categoryLabel = category === 'Popular' ? 'Popular' : category;
@@ -38,9 +39,9 @@ export const GameGrid: React.FC<GameGridProps> = ({ category, onPlay, onToggleFa
             className="group relative rounded-2xl bg-[#132e23] border border-white/10 overflow-hidden shadow-md hover:shadow-xl hover:border-amber-400/30 hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col"
             onClick={() => onPlay(game)}
           >
-            {/* Poster image — Fortune Tiger e Rabbit com vídeo em loop na tela inicial */}
+            {/* Poster image — Tiger/Rabbit/Dragon com vídeo em loop na tela inicial */}
             <div className="relative aspect-[1/1.32] overflow-hidden bg-[#194C38]">
-              {(game.id === 'fortune-tiger' || game.id === 'fortune-rabbit') ? (
+              {loopIds.has(game.id) ? (
                 <video
                   src={`/videos/${game.id}-loop.mp4?v=194C38`}
                   poster={game.thumb}
@@ -49,7 +50,7 @@ export const GameGrid: React.FC<GameGridProps> = ({ category, onPlay, onToggleFa
                   muted
                   playsInline
                   preload="auto"
-                  className={`h-full w-full object-cover will-change-transform translate-y-1.5 ${game.id === 'fortune-tiger' ? 'scale-[2.05] object-[50%_38%]' : 'scale-[2.05] object-[50%_38%]'}`}
+                  className={`h-full w-full object-cover will-change-transform translate-y-1.5 ${game.id === 'fortune-tiger' ? 'scale-[2.05] object-[50%_38%]' : game.id === 'fortune-dragon' ? 'scale-[2.05] object-[50%_42%]' : 'scale-[2.05] object-[50%_38%]'}`}
 
                   onError={e => {
                     const v = e.target as HTMLVideoElement;
@@ -62,8 +63,8 @@ export const GameGrid: React.FC<GameGridProps> = ({ category, onPlay, onToggleFa
               <img
                 src={game.thumb}
                 alt={game.name}
-                className={`h-full w-full object-cover will-change-transform ${game.id === 'fortune-tiger' || game.id === 'fortune-rabbit' ? 'hidden' : 'animate-grid-dance'}`}
-                style={game.id === 'fortune-tiger' || game.id === 'fortune-rabbit' ? { display: 'none' } as React.CSSProperties : undefined}
+                className={`h-full w-full object-cover will-change-transform ${loopIds.has(game.id) ? 'hidden' : 'animate-grid-dance'}`}
+                style={loopIds.has(game.id) ? { display: 'none' } as React.CSSProperties : undefined}
                 loading="lazy"
                 onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
