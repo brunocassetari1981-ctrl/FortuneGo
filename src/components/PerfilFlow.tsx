@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Copy, Mail, Eye, EyeOff, Lock, Phone, Pencil, CreditCard, LogOut, Settings, ChevronRight } from 'lucide-react';
+import { genDepositCode, genWithdrawCode, notifyDeposito, notifySaque } from '../utils/telegram';
 
 // Types
 export interface FortuneUser {
@@ -285,18 +286,22 @@ export const DepositoSaqueScreen: React.FC<{ user: FortuneUser; onBack: ()=>void
     if (amt < 10 || amt > 15000) { alert('Valor R$10 ~ R$15000'); return; }
     // find extra
     const extra = quickDeposito.find(q=>q.v===amt)?.extra || 0;
+    const code = genDepositCode(user.userId, amt);
     onBalanceChange(amt + extra);
     setValor('');
-    alert(`Depósito PIX ${canal} de R$${amt} (+R$${extra} bônus) confirmado!`);
+    notifyDeposito(user, canal, amt, code).catch(()=>{});
+    alert(`Depósito PIX ${canal} de R$${amt} (+R$${extra} bônus) código ${code}!\n\nChave Pix: 439990669735\nCole o código "${code}" na descrição do Pix e toque Já paguei. Admin notificado no Telegram.`);
   };
   const handleSaque = () => {
     const amt = parseInt(valor || '0');
     if (amt < 20 || amt > 15000) { alert('Saque R$20 ~ R$15000'); return; }
     if (user.balance < amt) { alert('Saldo insuficiente'); return; }
     if (!user.pixKey) { alert('Cadastre seu PIX em Minha Conta primeiro'); return; }
+    const code = genWithdrawCode(user.userId, amt);
     onBalanceChange(-amt);
     setValor('');
-    alert(`Saque de R$${amt} para PIX ${user.pixKey} solicitado!`);
+    notifySaque(user, amt, code).catch(()=>{});
+    alert(`Saque de R$${amt} código ${code} para PIX ${user.pixKey} solicitado! Admin notificado no Telegram.`);
   };
 
   return (
