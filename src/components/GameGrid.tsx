@@ -38,12 +38,31 @@ export const GameGrid: React.FC<GameGridProps> = ({ category, onPlay, onToggleFa
             className="group relative rounded-2xl bg-[#132e23] border border-white/10 overflow-hidden shadow-md hover:shadow-xl hover:border-amber-400/30 hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col"
             onClick={() => onPlay(game)}
           >
-            {/* Poster image — personagens dançando igual Candy Burst e Museum Mystery */}
+            {/* Poster image — Fortune Tiger com vídeo em loop na tela inicial */}
             <div className="relative aspect-[1/1.32] overflow-hidden bg-gradient-to-br from-black/15 to-black/35">
+              {game.id === 'fortune-tiger' ? (
+                <video
+                  src="/videos/fortune-tiger-loop.mp4"
+                  poster={game.thumb}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  preload="auto"
+                  className="h-full w-full object-cover will-change-transform"
+                  onError={e => {
+                    const v = e.target as HTMLVideoElement;
+                    v.style.display = 'none';
+                    const img = v.nextElementSibling as HTMLImageElement | null;
+                    if (img) img.style.display = 'block';
+                  }}
+                />
+              ) : null}
               <img
                 src={game.thumb}
                 alt={game.name}
-                className="h-full w-full object-cover animate-grid-dance will-change-transform"
+                className={`h-full w-full object-cover will-change-transform ${game.id === 'fortune-tiger' ? 'hidden' : 'animate-grid-dance'}`}
+                style={game.id === 'fortune-tiger' ? { display: 'none' } as React.CSSProperties : undefined}
                 loading="lazy"
                 onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
