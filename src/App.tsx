@@ -443,7 +443,9 @@ export default function App() {
     if (id === 'deposit') { setShowDeposit(true); return; }
     if (id === 'perfil') {
       setBottomTab('perfil');
-      setPerfilSubView('perfil');
+      // Se já tem conta, vai direto pra Minha Conta (login -> Minha Conta)
+      if (fortuneUser) setPerfilSubView('minhaConta');
+      else setPerfilSubView('perfil');
       setView('lobby');
       return;
     }
@@ -477,7 +479,7 @@ export default function App() {
       <main className="pb-20">
         {bottomTab === 'perfil' ? (
           !fortuneUser ? (
-            <RegistroScreen onRegistered={(u)=>{ setFortuneUser(u); setPerfilSubView('perfil'); pushToast('Registro concluído!', `Conta ${u.conta} • ID ${u.userId}`); }} />
+            <RegistroScreen onRegistered={(u)=>{ setFortuneUser(u); saveUser(u); setBottomTab('comecar'); setView('lobby'); pushToast('Registro concluído! Bem-vindo', `Conta ${u.conta}`); }} onSwitchToLogin={()=>{ if(fortuneUser) { setPerfilSubView('minhaConta'); } else { pushToast('Faça o registro primeiro'); } }} />
           ) : perfilSubView === 'minhaConta' ? (
             <MinhaContaScreen user={fortuneUser} onBack={()=>setPerfilSubView('perfil')} onSavePix={(k,t)=>{ const nu={...fortuneUser, pixKey:k, pixType:t}; setFortuneUser(nu); saveUser(nu); pushToast('PIX salvo!', k); }} onLogout={()=>{ saveUser(null); setFortuneUser(null); setBottomTab('comecar'); pushToast('Saiu da conta'); }} />
           ) : (perfilSubView === 'deposito' || perfilSubView === 'saque') ? (

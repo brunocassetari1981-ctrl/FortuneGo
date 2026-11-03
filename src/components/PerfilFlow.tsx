@@ -40,7 +40,7 @@ function genNomeMarca() {
 }
 
 // --- Registro Screen (REGISTRO.jpeg style) ---
-export const RegistroScreen: React.FC<{ onRegistered: (u: FortuneUser) => void; onSwitchToLogin?: () => void }> = ({ onRegistered }) => {
+export const RegistroScreen: React.FC<{ onRegistered: (u: FortuneUser) => void; onSwitchToLogin?: () => void }> = ({ onRegistered, onSwitchToLogin }) => {
   const [phone, setPhone] = useState('');
   const [senha, setSenha] = useState('');
   const [confSenha, setConfSenha] = useState('');
@@ -83,7 +83,7 @@ export const RegistroScreen: React.FC<{ onRegistered: (u: FortuneUser) => void; 
 
         <div className="flex items-end gap-2 mt-2 mb-6">
           <h1 className="text-[34px] font-black text-[#f5e6b8] leading-none tracking-tight" style={{fontFamily: 'Fredoka'}}>Registro</h1>
-          <p className="text-[11px] text-white/60 leading-tight pb-1">Registro Já tem uma conta? <span className="text-[#f5d76e] font-bold cursor-pointer">Entrar agora</span></p>
+          <p className="text-[11px] text-white/60 leading-tight pb-1">Registro Já tem uma conta? <span onClick={onSwitchToLogin} className="text-[#f5d76e] font-bold cursor-pointer hover:underline">Entrar agora</span></p>
         </div>
 
         {/* Phone */}
