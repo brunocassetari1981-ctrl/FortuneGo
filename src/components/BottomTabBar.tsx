@@ -39,8 +39,8 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({ active, onChange, on
                   onClick={onDeposit}
                   className="flex flex-col items-center justify-end -mt-4 cursor-pointer active:scale-95"
                 >
-                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-400 via-yellow-400 to-amber-500 flex items-center justify-center text-xl shadow-lg shadow-amber-500/30 border-2 border-yellow-200 -mb-1">
-                    💰
+                  <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-lg shadow-amber-500/30 border-2 border-yellow-200 -mb-1 bg-[#0a1f15]">
+                    <img src="/icon-192.png" alt="FortuneGo" className="w-full h-full object-cover" />
                   </div>
                   <span className="text-[10px] font-black text-amber-300 tracking-wide">Depósito</span>
                 </button>
