@@ -372,11 +372,11 @@ export const SlotSymbolArtwork: React.FC<SlotSymbolArtworkProps> = ({ symbol, cl
       <circle cx="64" cy="64" r="61" fill={`url(#${id}-back)`} stroke={`url(#${id}-rim)`} strokeWidth="5" />
       <circle cx="64" cy="64" r="54" fill="none" stroke="#fff" strokeOpacity=".25" strokeWidth="2" />
       {simplified ? (
-        <g transform="scale(1.15) translate(-9, -9)">
+        <g transform="scale(1.3) translate(-12, -12)">
           <SymbolMotif kind={kind} id={symbol.id.toLowerCase()} color={color} accent={accent} />
         </g>
       ) : (
-        <g filter={`url(#${id}-glow)`} transform="scale(1.18) translate(-10, -10)">
+        <g filter={`url(#${id}-glow)`} transform="scale(1.35) translate(-13, -13)">
           <SymbolMotif kind={kind} id={symbol.id.toLowerCase()} color={color} accent={accent} />
         </g>
       )}
