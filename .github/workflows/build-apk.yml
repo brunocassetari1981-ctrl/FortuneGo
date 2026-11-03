@@ -32,19 +32,16 @@ jobs:
         run: yes | sdkmanager --licenses || true
 
       - name: Install deps
-        run: npm ci --loglevel=verbose
+        run: npm ci
 
-      - name: Build web (verbose)
-        run: |
-          node -v
-          npm -v
-          npx tsc --version
-          npm run build 2>&1 | tee build.log
-          echo "=== BUILD LOG TAIL ==="
-          tail -n 200 build.log
+      - name: Build web
+        run: npm run build
 
       - name: Sync Capacitor Android
-        run: npx cap sync android
+        run: |
+          npx cap sync android --verbose 2>&1 | tee cap-sync.log
+          echo "--- cap sync done, checking android assets ---"
+          ls -la android/app/src/main/assets/public/ | head -n 20
 
       - name: Build APK Debug
         working-directory: android
@@ -57,9 +54,12 @@ jobs:
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
 
-      - name: Upload build log on failure
+      - name: Upload logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: build-log
-          path: build.log
+          name: logs-failure
+          path: |
+            cap-sync.log
+            build.log
+            android/app/build/outputs/logs/*.log
