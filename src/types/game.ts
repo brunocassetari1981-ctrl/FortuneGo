@@ -83,6 +83,7 @@ export interface SlotSymbol {
   isWild?: boolean;
   isScatter?: boolean;
   color: string;
+  imageUrl?: string;
 }
 
 export interface SlotGameDef {
