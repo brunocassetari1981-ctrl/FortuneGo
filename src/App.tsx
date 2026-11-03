@@ -15,6 +15,7 @@ import { MissionsModal } from './components/MissionsModal';
 import { StoreModal } from './components/StoreModal';
 import { MiniGamesModal } from './components/MiniGamesModal';
 import { BottomTabBar } from './components/BottomTabBar';
+import { PerfilScreen, RegistroScreen, MinhaContaScreen, DepositoSaqueScreen, FortuneUser, loadUser, saveUser } from './components/PerfilFlow';
 import { sound } from './utils/audio';
 import { SlotGameDef } from './types/game';
 
@@ -39,6 +40,8 @@ export default function App() {
   const [showBoardToast, setShowBoardToast] = useState<string | null>(null);
   const [slotFav, setSlotFav] = useState<Set<string>>(new Set(['fortune-tiger', 'fortune-rabbit']));
   const [bottomTab, setBottomTab] = useState('comecar');
+  const [fortuneUser, setFortuneUser] = useState<FortuneUser | null>(() => loadUser());
+  const [perfilSubView, setPerfilSubView] = useState<'perfil' | 'minhaConta' | 'deposito' | 'saque'>('perfil');
 
   // Dice & board state
   const [isRolling, setIsRolling] = useState(false);
@@ -435,9 +438,15 @@ export default function App() {
 
   const pendingMissionsCount = state.missions.filter(m => m.current >= m.target && !m.claimed).length;
 
-  // Bottom tab handling
+  // Bottom tab handling - Perfil now has full Registro/Perfil flow
   const handleBottomNav = (id: string) => {
     if (id === 'deposit') { setShowDeposit(true); return; }
+    if (id === 'perfil') {
+      setBottomTab('perfil');
+      setPerfilSubView('perfil');
+      setView('lobby');
+      return;
+    }
     setBottomTab(id);
     if (id === 'comecar') setView('lobby');
     else pushToast('Em breve', `${id} estará disponível em atualização futura`);
@@ -466,7 +475,17 @@ export default function App() {
 
       {/* Main content area with bottom tab padding */}
       <main className="pb-20">
-        {view === 'lobby' ? (
+        {bottomTab === 'perfil' ? (
+          !fortuneUser ? (
+            <RegistroScreen onRegistered={(u)=>{ setFortuneUser(u); setPerfilSubView('perfil'); pushToast('Registro concluído!', `Conta ${u.conta} • ID ${u.userId}`); }} />
+          ) : perfilSubView === 'minhaConta' ? (
+            <MinhaContaScreen user={fortuneUser} onBack={()=>setPerfilSubView('perfil')} onSavePix={(k,t)=>{ const nu={...fortuneUser, pixKey:k, pixType:t}; setFortuneUser(nu); saveUser(nu); pushToast('PIX salvo!', k); }} onLogout={()=>{ saveUser(null); setFortuneUser(null); setBottomTab('comecar'); pushToast('Saiu da conta'); }} />
+          ) : (perfilSubView === 'deposito' || perfilSubView === 'saque') ? (
+            <DepositoSaqueScreen user={fortuneUser} mode={perfilSubView} onBack={()=>setPerfilSubView('perfil')} onBalanceChange={(d)=>{ const nu={...fortuneUser, balance: Math.max(0, fortuneUser.balance + d)}; setFortuneUser(nu); saveUser(nu); if(d>0) { setState(s=>({...s, coins: s.coins + d*10})); } pushToast(d>0? `Depósito R$${d}` : `Saque R$${Math.abs(d)}`, d>0? 'Saldo atualizado' : 'PIX enviado'); }} />
+          ) : (
+            <PerfilScreen user={fortuneUser} onOpenDeposito={()=>setPerfilSubView('deposito')} onOpenSaque={()=>setPerfilSubView('saque')} onOpenMinhaConta={()=>setPerfilSubView('minhaConta')} onLogout={()=>{ saveUser(null); setFortuneUser(null); setBottomTab('comecar'); pushToast('Saiu da conta'); }} />
+          )
+        ) : view === 'lobby' ? (
           <>
             <BannerCarousel onClaimPromo={(id) => {
               if (id.startsWith('q') || id.startsWith('b')) {
