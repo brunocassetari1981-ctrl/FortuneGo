@@ -48,15 +48,13 @@ export const SLOT_GAMES: SlotGameDef[] = [
     new: true,
     description: 'Coelho da sorte com 8 prêmios especiais e Fortune Rabbit Feature até 5000x!',
     symbols: [
-      { id: 'rabbit', emoji: '🐰', name: 'Coelho', payout: { 3: 60 }, isWild: true, color: '#E11D48' },
-      { id: 'carrot', emoji: '🥕', name: 'Cenoura', payout: { 3: 25 }, color: '#F97316' },
-      { id: 'carrotGold', emoji: '🥕', name: 'Cenoura Dourada', payout: { 3: 30 }, color: '#FFD700' },
-      { id: 'ingot', emoji: '🪙', name: 'Moeda', payout: { 3: 20 }, color: '#FFB800' },
-      { id: 'envelope', emoji: '🧧', name: 'Envelope', payout: { 3: 12 }, color: '#DC2626' },
-      { id: 'lantern', emoji: '🏮', name: 'Lanterna', payout: { 3: 10 }, color: '#FF4500' },
-      { id: 'coinbag', emoji: '💰', name: 'Saco Dourado', payout: { 3: 15 }, color: '#F59E0B' },
-      { id: 'orange', emoji: '🍊', name: 'Tangerina', payout: { 3: 6 }, color: '#FB923C' },
-      { id: 'pearl', emoji: '💮', name: 'Flor', payout: { 3: 7 }, color: '#F43F5E' },
+      { id: 'rabbit', emoji: '🐰', name: 'Coelho Wild', payout: { 3: 60 }, isWild: true, color: '#E11D48' },
+      { id: 'coinbag', emoji: '💰', name: 'Saco de Moedas', payout: { 3: 25 }, color: '#10B981' },
+      { id: 'coin', emoji: '🪙', name: 'Moedas Duplas', payout: { 3: 20 }, color: '#34D399' },
+      { id: 'sign', emoji: '📜', name: 'Placa Dourada', payout: { 3: 18 }, color: '#F59E0B' },
+      { id: 'ingot', emoji: '🪙', name: 'Lingote Coelho', payout: { 3: 15 }, color: '#FBBF24' },
+      { id: 'firecracker', emoji: '🧨', name: 'Foguetes', payout: { 3: 12 }, color: '#10B981' },
+      { id: 'carrot', emoji: '🥕', name: 'Cenoura', payout: { 3: 10 }, color: '#F97316' },
     ]
   },
   {
