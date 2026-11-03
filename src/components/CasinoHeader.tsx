@@ -44,9 +44,7 @@ export const CasinoHeader: React.FC<CasinoHeaderProps> = ({
       <div className="lobby-container px-3 py-2 flex items-center justify-between gap-2">
         {/* Left: Logo + Lv */}
         <div className="flex items-center gap-2 shrink-0">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 via-yellow-300 to-amber-500 flex items-center justify-center shadow-lg border border-yellow-200/80">
-            <span className="text-xl">🎰</span>
-          </div>
+          <img src="/fortunego-header-icon.jpg" alt="FortuneGo" className="w-9 h-9 rounded-xl shadow-lg border border-white/15 object-cover shrink-0" />
           <div className="hidden sm:block">
             <div className="flex items-center gap-1.5 leading-none">
               <span className="font-fredoka text-[18px] font-extrabold tracking-tight text-white drop-shadow">
