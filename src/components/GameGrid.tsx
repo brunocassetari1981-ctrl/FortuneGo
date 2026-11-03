@@ -39,7 +39,7 @@ export const GameGrid: React.FC<GameGridProps> = ({ category, onPlay, onToggleFa
             onClick={() => onPlay(game)}
           >
             {/* Poster image — Fortune Tiger e Rabbit com vídeo em loop na tela inicial */}
-            <div className="relative aspect-[1/1.32] overflow-hidden bg-[#0a1f15]">
+            <div className="relative aspect-[1/1.32] overflow-hidden bg-[#194C38]">
               {(game.id === 'fortune-tiger' || game.id === 'fortune-rabbit') ? (
                 <video
                   src={`/videos/${game.id}-loop.mp4`}
