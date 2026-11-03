@@ -49,7 +49,7 @@ export const GameGrid: React.FC<GameGridProps> = ({ category, onPlay, onToggleFa
                   muted
                   playsInline
                   preload="auto"
-                  className="h-full w-full object-cover will-change-transform"
+                  className="h-full w-full object-cover scale-[1.35] object-center will-change-transform"
                   onError={e => {
                     const v = e.target as HTMLVideoElement;
                     v.style.display = 'none';
