@@ -8,10 +8,13 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
           ref: arena/6c53608a-fortunego
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -26,7 +29,7 @@ jobs:
         uses: android-actions/setup-android@v3
         with:
           cmdline-tools-version: 11076708
-          packages: 'platform-tools platforms;android-34 build-tools;34.0.0'
+          packages: 'platform-tools platforms;android-34 build-tools;34.0.0 ndk;25.1.8937393'
 
       - name: Accept Android licenses
         run: yes | sdkmanager --licenses || true
@@ -38,28 +41,30 @@ jobs:
         run: npm run build
 
       - name: Sync Capacitor Android
-        run: |
-          npx cap sync android --verbose 2>&1 | tee cap-sync.log
-          echo "--- cap sync done, checking android assets ---"
-          ls -la android/app/src/main/assets/public/ | head -n 20
+        run: npx cap sync android
 
       - name: Build APK Debug
         working-directory: android
-        run: ./gradlew assembleDebug --stacktrace
+        run: |
+          ./gradlew assembleDebug --stacktrace 2>&1 | tee ../gradle.log
+          echo "EXIT_CODE:${PIPESTATUS[0]}" | tee -a ../gradle.log
 
       - name: Upload APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: FortuneGo-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
 
-      - name: Upload logs on failure
+      - name: Save Gradle log to branch on failure
         if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: logs-failure
-          path: |
-            cap-sync.log
-            build.log
-            android/app/build/outputs/logs/*.log
+        run: |
+          echo "=== GRADLE LOG (last 500 lines) ==="
+          tail -n 500 ../gradle.log || cat ../gradle.log || echo "no log"
+          cp ../gradle.log ./gradle-failure.log || cp gradle.log ./gradle-failure.log || true
+          git config user.email "ci@fortunego.local"
+          git config user.name "FortuneGo CI"
+          git add gradle-failure.log || true
+          git commit -m "ci: gradle failure log" || echo "nothing to commit"
+          git push origin HEAD:arena/6c53608a-fortunego || echo "push failed"
