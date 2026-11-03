@@ -43,7 +43,7 @@ export const GameGrid: React.FC<GameGridProps> = ({ category, onPlay, onToggleFa
             <div className="relative aspect-[1/1.32] overflow-hidden bg-[#194C38]">
               {loopIds.has(game.id) ? (
                 <video
-                  src={`/videos/${game.id}-loop.mp4?v=194C38`}
+                  src={`/videos/${game.id}-loop.mp4?v=194C38-nohalo`}
                   poster={game.thumb}
                   autoPlay
                   loop
