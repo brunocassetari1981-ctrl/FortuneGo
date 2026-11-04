@@ -29,7 +29,7 @@ jobs:
         uses: android-actions/setup-android@v3
         with:
           cmdline-tools-version: 11076708
-          packages: 'platform-tools platforms;android-34 build-tools;34.0.0 ndk;25.1.8937393'
+          packages: 'platform-tools platforms;android-36 build-tools;36.0.0'
 
       - name: Accept Android licenses
         run: yes | sdkmanager --licenses || true
@@ -41,15 +41,33 @@ jobs:
         run: npm run build
 
       - name: Sync Capacitor Android
-        run: npx cap sync android
+        shell: bash
+        run: |
+          set -o pipefail
+          npx cap sync android 2>&1 | tee cap-sync.log
 
       - name: Build APK Debug
         working-directory: android
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+        shell: bash
+        run: |
+          set -o pipefail
+          chmod +x ./gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee ../gradle.log
 
       - name: Upload APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: FortuneGo-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
+
+      - name: Upload failure logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-failure-logs
+          path: |
+            cap-sync.log
+            gradle.log
+          retention-days: 7
