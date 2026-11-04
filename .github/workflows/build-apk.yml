@@ -83,3 +83,16 @@ jobs:
             echo "=== TAIL cap-sync.log ==="
             tail -n 60 cap-sync.log 2>/dev/null || echo "sem cap-sync.log"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit debug logs
+        if: failure()
+        shell: bash
+        run: |
+          if [ -f gradle.log ]; then
+            git config user.name "ci-debug"
+            git config user.email "ci-debug@users.noreply.github.com"
+            cp gradle.log gradle-ci-debug.log
+            git add gradle-ci-debug.log
+            git commit -m "ci-debug: gradle.log falha build APK" || true
+            git push origin HEAD:refs/heads/arena/6c53608a-fortunego
+          fi
