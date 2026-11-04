@@ -2,34 +2,34 @@ name: Build FortuneGo APK
 
 on:
   push:
-    branches: [ "arena/6c53608a-fortunego" ]
+    branches: [ "main", "arena/**" ]
+  pull_request:
+    branches: [ main ]
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: arena/6c53608a-fortunego
-          fetch-depth: 0
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 22
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
           cmdline-tools-version: 11076708
-          packages: 'platform-tools platforms;android-34 build-tools;34.0.0 ndk;25.1.8937393'
+          packages: 'platform-tools platforms;android-36 build-tools;36.0.0'
 
       - name: Accept Android licenses
         run: yes | sdkmanager --licenses || true
@@ -41,39 +41,33 @@ jobs:
         run: npm run build
 
       - name: Sync Capacitor Android
+        shell: bash
         run: |
           set -o pipefail
-          npx cap sync android 2>&1 | tee ../cap-sync.log
-          echo "SYNC_EXIT:${PIPESTATUS[0]}" | tee -a ../cap-sync.log
-          ls -lh ../cap-sync.log
-          ls -lh android/app/src/main/assets/public/ || echo "no assets"
+          npx cap sync android 2>&1 | tee cap-sync.log
 
       - name: Build APK Debug
         working-directory: android
+        shell: bash
         run: |
           set -o pipefail
-          ./gradlew assembleDebug --stacktrace 2>&1 | tee ../gradle.log
+          chmod +x ./gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee ../gradle.log
 
       - name: Upload APK
         if: success()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: FortuneGo-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
 
-      - name: Save logs to branch on failure
+      - name: Upload failure logs
         if: failure()
-        run: |
-          echo "=== failure detected, saving logs ==="
-          ls -lh ../cap-sync.log ../gradle.log 2>&1 | head -n 20
-          cat ../cap-sync.log 2>&1 | tail -n 500 > ./ci-cap-sync.log || echo "no cap-sync log" > ./ci-cap-sync.log
-          cat ../gradle.log 2>&1 | tail -n 500 > ./ci-gradle.log || echo "no gradle log" > ./ci-gradle.log
-          ls -lh ci-*.log
-          git config user.email "ci@fortunego.local"
-          git config user.name "FortuneGo CI"
-          git add ci-cap-sync.log ci-gradle.log || true
-          git commit -m "ci: logs falha - cap-sync e gradle" || echo "nothing to commit"
-          git push origin HEAD:arena/6c53608a-fortunego || echo "push failed"
-          cat ci-cap-sync.log
-          cat ci-gradle.log
+        uses: actions/upload-artifact@v7
+        with:
+          name: ci-failure-logs
+          path: |
+            cap-sync.log
+            gradle.log
+          retention-days: 7
