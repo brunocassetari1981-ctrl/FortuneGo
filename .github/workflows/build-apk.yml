@@ -72,3 +72,14 @@ jobs:
             cap-sync.log
             gradle.log
           retention-days: 7
+
+      - name: Debug — exibe erro do gradle
+        if: failure()
+        shell: bash
+        run: |
+          {
+            echo "=== TAIL gradle.log ==="
+            tail -n 120 gradle.log 2>/dev/null || echo "sem gradle.log"
+            echo "=== TAIL cap-sync.log ==="
+            tail -n 60 cap-sync.log 2>/dev/null || echo "sem cap-sync.log"
+          } >> "$GITHUB_STEP_SUMMARY"
