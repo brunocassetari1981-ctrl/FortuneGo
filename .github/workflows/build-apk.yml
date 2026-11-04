@@ -96,3 +96,11 @@ jobs:
             git commit -m "ci-debug: gradle.log falha build APK" || true
             git push origin HEAD:refs/heads/arena/6c53608a-fortunego
           fi
+
+      - name: Print gradle error
+        if: failure()
+        shell: bash
+        run: |
+          echo "=== GRADLE ERROR ==="
+          tail -n 150 gradle.log 2>/dev/null || echo "sem gradle.log"
+          echo "=== END ==="
