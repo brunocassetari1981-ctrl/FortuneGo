@@ -63,7 +63,25 @@ function getArtKind(id: string): SymbolArtKind {
   return 'treasure';
 }
 
+function getAnimalImage(id: string): string | null {
+  const l = id.toLowerCase();
+  if (l.includes('tiger')) return '/characters/fortune-tiger.png';
+  if (l.includes('rabbit2') || l.includes('rabbit_2')) return '/characters/fortune-rabbit-2.png';
+  if (l.includes('rabbit')) return '/characters/fortune-rabbit.png';
+  if (l.includes('hatch')) return '/characters/dragon-hatch.png';
+  if (l.includes('dragon')) return '/characters/fortune-dragon.png';
+  if (l.includes('ox')) return '/characters/fortune-ox.png';
+  if (l.includes('snake')) return '/characters/fortune-snake.png';
+  if (l.includes('pinata')) return '/characters/pinata-wins.png';
+  if (l.includes('bandit') || l.includes('wild')) return '/characters/wild-bandito.png';
+  return null;
+}
+
 function SymbolMotif({ kind, id, color, accent }: { kind: SymbolArtKind; id: string; color: string; accent: string }) {
+  if (kind === 'animal') {
+    const img = getAnimalImage(id);
+    if (img) return <image href={img} x="12" y="8" width="104" height="104" preserveAspectRatio="xMidYMid meet" />;
+  }
   switch (kind) {
     case 'animal':
       return (
