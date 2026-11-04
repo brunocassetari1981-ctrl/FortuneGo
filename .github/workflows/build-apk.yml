@@ -104,3 +104,14 @@ jobs:
           echo "=== GRADLE ERROR ==="
           tail -n 150 gradle.log 2>/dev/null || echo "sem gradle.log"
           echo "=== END ==="
+
+      - name: Debug — verifica SDK
+        if: failure()
+        shell: bash
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+          echo "JAVA_HOME=$JAVA_HOME"
+          java -version 2>&1 | head -n 3
+          ls "$ANDROID_HOME/platforms" 2>&1 | head -n 10
+          ls "$ANDROID_HOME/build-tools" 2>&1 | head -n 10
