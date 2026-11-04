@@ -2,7 +2,7 @@ name: Build FortuneGo APK
 
 on:
   push:
-    branches: [ "arena/e6aac85d-fortunego", "main" ]
+    branches: [ "main", "arena/**" ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
@@ -51,6 +51,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
+          chmod +x ./gradlew
           ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee ../gradle.log
 
       - name: Upload APK
