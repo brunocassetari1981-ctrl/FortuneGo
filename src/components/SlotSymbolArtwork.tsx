@@ -343,8 +343,8 @@ export const SlotSymbolArtwork: React.FC<SlotSymbolArtworkProps> = ({ symbol, cl
 
   if (symbol.imageUrl) {
     return (
-      <div className={`relative flex items-center justify-center w-full h-full rounded-full overflow-hidden bg-black/40 ${className}`} style={style}>
-        <img src={symbol.imageUrl} alt={symbol.name} className="w-full h-full object-cover scale-125 drop-shadow-xl" />
+      <div className={`relative flex items-center justify-center w-full h-full ${className}`} style={style}>
+        <img src={symbol.imageUrl} alt={symbol.name} className="w-full h-full object-contain scale-140 drop-shadow-lg" />
       </div>
     );
   }
