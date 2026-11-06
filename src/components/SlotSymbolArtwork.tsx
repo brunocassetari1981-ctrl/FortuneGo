@@ -341,6 +341,14 @@ export const SlotSymbolArtwork: React.FC<SlotSymbolArtworkProps> = ({ symbol, cl
   const accent = symbol.isWild ? '#fef08a' : '#ffffff';
   const kind = getArtKind(symbol.id.toLowerCase());
 
+  if (symbol.imageUrl) {
+    return (
+      <div className={`relative flex items-center justify-center w-full h-full rounded-full overflow-hidden bg-black/40 ${className}`} style={style}>
+        <img src={symbol.imageUrl} alt={symbol.name} className="w-full h-full object-cover scale-125 drop-shadow-xl" />
+      </div>
+    );
+  }
+
   if (bare) {
     return (
       <svg
