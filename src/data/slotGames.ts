@@ -76,15 +76,13 @@ export const SLOT_GAMES: SlotGameDef[] = [
     hot: true,
     description: 'Dragão imperial com multiplicadores crescentes e rodadas grátis com sticky wilds.',
     symbols: [
-      { id: 'dragon', emoji: '🐲', name: 'Dragão', payout: { 3: 80 }, isWild: true, color: '#059669' },
-      { id: 'pearl', emoji: '🐉', name: 'Dragão Dourado', payout: { 3: 30 }, color: '#F59E0B' },
-      { id: 'ingot', emoji: '🪙', name: 'Lingote Jade', payout: { 3: 20 }, color: '#10B981' },
-      { id: 'lantern', emoji: '🏮', name: 'Lanterna', payout: { 3: 12 }, color: '#EF4444' },
-      { id: 'coin', emoji: '💮', name: 'Moeda Dragão', payout: { 3: 15 }, color: '#FBBF24' },
-      { id: 'cloud', emoji: '☁️', name: 'Nuvem', payout: { 3: 8 }, color: '#93C5FD' },
-      { id: 'fan', emoji: '🪭', name: 'Leque', payout: { 3: 7 }, color: '#A78BFA' },
-      { id: 'envelope', emoji: '🧧', name: 'Envelope', payout: { 3: 10 }, color: '#DC2626' },
-      { id: 'fire', emoji: '🔥', name: 'Fogo', payout: { 3: 9 }, color: '#F97316' },
+      { id: 'dragon', emoji: '🐲', name: 'Dragão Wild', payout: { 3: 80 }, isWild: true, color: '#059669', imageUrl: '/characters/Fortune Dragon/dra.png' },
+      { id: 'pearl', emoji: '🐉', name: 'Dragão Dourado', payout: { 3: 30 }, color: '#F59E0B', imageUrl: '/characters/Fortune Dragon/dra1.png' },
+      { id: 'ingot', emoji: '🪙', name: 'Lingote Jade', payout: { 3: 20 }, color: '#10B981', imageUrl: '/characters/Fortune Dragon/dra2.png' },
+      { id: 'lantern', emoji: '🏮', name: 'Lanterna', payout: { 3: 12 }, color: '#EF4444', imageUrl: '/characters/Fortune Dragon/dra3.png' },
+      { id: 'coin', emoji: '💮', name: 'Moeda Dragão', payout: { 3: 15 }, color: '#FBBF24', imageUrl: '/characters/Fortune Dragon/dra4.png' },
+      { id: 'cloud', emoji: '☁️', name: 'Nuvem', payout: { 3: 8 }, color: '#93C5FD', imageUrl: '/characters/Fortune Dragon/dra5.png' },
+      { id: 'fan', emoji: '🪭', name: 'Leque', payout: { 3: 7 }, color: '#A78BFA', imageUrl: '/characters/Fortune Dragon/dra6.png' },
     ]
   },
   {
