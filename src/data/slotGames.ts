@@ -103,15 +103,13 @@ export const SLOT_GAMES: SlotGameDef[] = [
     category: ['Popular', 'Slots', 'Fortune'],
     description: 'Touro da fortuna com Fortune Ox Feature e multiplicador até x10 no prêmio máximo!',
     symbols: [
-      { id: 'ox', emoji: '🐂', name: 'Touro', payout: { 3: 70 }, isWild: true, color: '#B45309' },
-      { id: 'ingot', emoji: '🪙', name: 'Lingote', payout: { 3: 25 }, color: '#FBBF24' },
-      { id: 'bell', emoji: '🔔', name: 'Sino', payout: { 3: 15 }, color: '#F59E0B' },
-      { id: 'envelope', emoji: '🧧', name: 'Envelope', payout: { 3: 12 }, color: '#DC2626' },
-      { id: 'fan', emoji: '🪭', name: 'Leque Dourado', payout: { 3: 10 }, color: '#F472B6' },
-      { id: 'drum', emoji: '🥁', name: 'Tambor', payout: { 3: 8 }, color: '#A855F7' },
-      { id: 'coinbag', emoji: '💰', name: 'Saco', payout: { 3: 18 }, color: '#EAB308' },
-      { id: 'orange', emoji: '🍊', name: 'Tangerina', payout: { 3: 6 }, color: '#FB923C' },
-      { id: 'lantern', emoji: '🏮', name: 'Lanterna', payout: { 3: 9 }, color: '#EF4444' },
+      { id: 'ox', emoji: '🐂', name: 'Touro Wild', payout: { 3: 70 }, isWild: true, color: '#B45309', imageUrl: '/characters/Fortune Ox/ox0.jpeg' },
+      { id: 'ingot', emoji: '🪙', name: 'Lingote', payout: { 3: 25 }, color: '#FBBF24', imageUrl: '/characters/Fortune Ox/ox1.jpeg' },
+      { id: 'bell', emoji: '🔔', name: 'Sino', payout: { 3: 15 }, color: '#F59E0B', imageUrl: '/characters/Fortune Ox/ox2.jpeg' },
+      { id: 'envelope', emoji: '🧧', name: 'Envelope', payout: { 3: 12 }, color: '#DC2626', imageUrl: '/characters/Fortune Ox/ox3.jpeg' },
+      { id: 'coinbag', emoji: '💰', name: 'Saco', payout: { 3: 18 }, color: '#EAB308', imageUrl: '/characters/Fortune Ox/ox4.jpeg' },
+      { id: 'drum', emoji: '🥁', name: 'Tambor', payout: { 3: 8 }, color: '#A855F7', imageUrl: '/characters/Fortune Ox/ox5.jpeg' },
+      { id: 'orange', emoji: '🍊', name: 'Tangerina', payout: { 3: 6 }, color: '#FB923C', imageUrl: '/characters/Fortune Ox/ox6.jpeg' },
     ]
   },
   {
