@@ -34,6 +34,7 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
   const [autoSpin, setAutoSpin] = useState(false);
   const [turbo, setTurbo] = useState(false);
   const [freeSpins, setFreeSpins] = useState(0);
+  const [featureAlert, setFeatureAlert] = useState<string | null>(null);
   const autoRef = useRef<number | null>(null);
   const [musicOn, setMusicOn] = useState(true);
   const touchStartY = useRef(0);
@@ -119,6 +120,22 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
 
     if (result.totalWin > 0) {
       setLastWin(result.totalWin);
+
+      // Feature alerts per game matching PG Soft style
+      if (game.id === 'fortune-tiger' && Math.random() < 0.5) {
+        setFeatureAlert('🔥 FORTUNE TIGER FEATURE: RESPINS & X10 MULTIPLIER!');
+        setTimeout(() => setFeatureAlert(null), 3000);
+      } else if ((game.id === 'fortune-rabbit' || game.id === 'fortune-rabbit-2') && Math.random() < 0.5) {
+        setFeatureAlert('🐰 LUCKY RABBIT FEATURE: PRÊMIOS ESPECIAIS ATIVADOS!');
+        setTimeout(() => setFeatureAlert(null), 3000);
+      } else if (game.id === 'fortune-dragon' && Math.random() < 0.5) {
+        setFeatureAlert('🐲 DRAGON IMPERIAL: MULTIPLICADORES CRESCENTES!');
+        setTimeout(() => setFeatureAlert(null), 3000);
+      } else if (game.id === 'fortune-ox' && Math.random() < 0.5) {
+        setFeatureAlert('🐂 FORTUNE OX FEATURE: VITÓRIA GARANTIDA!');
+        setTimeout(() => setFeatureAlert(null), 3000);
+      }
+
       if (result.isMegaWin) {
         setBigWinAmount(result.totalWin);
         setShowBigWin(true);
@@ -217,6 +234,13 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
         {/* Rolo central - transparente, área responsiva */}
         <div className="flex-1 bg-transparent backdrop-blur-[1px] relative flex items-center justify-center px-1 py-[2.5%] sm:py-3 overflow-visible min-h-[280px] border-y border-white/5">
 
+          {featureAlert && (
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 z-30 w-[92%] max-w-[320px] rounded-xl border-2 border-yellow-300 bg-gradient-to-r from-red-700 via-amber-600 to-yellow-600 py-2 px-3 text-center shadow-2xl animate-bounce">
+              <p className="font-fredoka text-xs font-black tracking-wider text-yellow-100 drop-shadow">
+                {featureAlert}
+              </p>
+            </div>
+          )}
 
           <div className="relative z-10 flex h-full w-[92%] max-w-[356px] flex-col overflow-visible" style={{ background: 'transparent' }}>
             <div
