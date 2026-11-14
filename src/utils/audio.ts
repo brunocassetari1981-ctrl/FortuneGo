@@ -202,75 +202,18 @@ class SoundManager {
         this.audioElement = new Audio(audioUrl);
         this.audioElement.loop = true;
         this.audioElement.volume = 0.75;
-        this.audioElement.play().catch(() => {
-          this.playSynthBackground();
-        });
+        this.audioElement.play().catch(() => {});
         return;
       } catch {
-        this.playSynthBackground();
         return;
       }
     }
-
-    this.playSynthBackground();
   }
 
-  // === Música de fundo oriental / festiva (Synthesizer fallback) ===
+  // === Música de fundo oriental / festiva (Synthesizer fallback desativado) ===
 
   private playSynthBackground() {
-    try {
-      this.initCtx(); if (!this.ctx) return;
-      const ctx = this.ctx;
-      const master = ctx.createGain();
-      master.gain.setValueAtTime(0.085, ctx.currentTime);
-      master.connect(ctx.destination);
-      this.bgGain = master;
-
-      // Melodia pentatônica (C D E G A) — loop alegre oriental
-      const baseMelody = [261.63, 293.66, 329.63, 392.00, 440.00, 392.00, 329.63, 293.66]; // C D E G A
-      const bassNotes = [130.81, 146.83, 164.81, 130.81]; // C2 D2 E2
-      let step = 0;
-
-      const playStep = () => {
-        if (!this.ctx || !this.bgGain) return;
-        const now = ctx.currentTime;
-        // melodia
-        const freq = baseMelody[step % baseMelody.length];
-        const osc = ctx.createOscillator();
-        const g = ctx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(freq, now);
-        // leve vibrato
-        osc.frequency.linearRampToValueAtTime(freq * 1.01, now + 0.18);
-        g.gain.setValueAtTime(0.22, now);
-        g.gain.exponentialRampToValueAtTime(0.001, now + 0.42);
-        osc.connect(g); g.connect(master);
-        osc.start(now); osc.stop(now + 0.42);
-
-        // baixo suave a cada 2 passos
-        if (step % 2 === 0) {
-          const bf = bassNotes[Math.floor(step/2) % bassNotes.length];
-          const bOsc = ctx.createOscillator();
-          const bG = ctx.createGain();
-          bOsc.type = 'sine';
-          bOsc.frequency.setValueAtTime(bf, now);
-          bG.gain.setValueAtTime(0.12, now);
-          bG.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
-          bOsc.connect(bG); bG.connect(master);
-          bOsc.start(now); bOsc.stop(now + 0.6);
-        }
-
-        step++;
-      };
-
-      // Toca imediatamente e agenda loop
-      playStep();
-      this.bgTimer = window.setInterval(playStep, 420);
-
-      // Fade in
-      master.gain.setValueAtTime(0, ctx.currentTime);
-      master.gain.linearRampToValueAtTime(0.085, ctx.currentTime + 1.2);
-    } catch {}
+    return; // Desativa completamente a musiquinha repetitiva nos jogos
   }
 
   public stopBackground() {
