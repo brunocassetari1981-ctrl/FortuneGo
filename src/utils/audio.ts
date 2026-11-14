@@ -1,7 +1,7 @@
 // Web Audio API Synthesizer for FortuneGo — agora com música de fundo e efeitos de rolagem
 class SoundManager {
   private ctx: AudioContext | null = null;
-  private enabled: boolean = true;
+  private enabled: boolean = false;
   private bgGain: GainNode | null = null;
   private bgOscs: OscillatorNode[] = [];
   private bgTimer: number | null = null;
