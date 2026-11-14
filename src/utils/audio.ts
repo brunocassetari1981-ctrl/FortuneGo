@@ -191,11 +191,33 @@ class SoundManager {
     if ('vibrate' in navigator) try { navigator.vibrate(pattern); } catch {}
   }
 
-  // === Música de fundo oriental / festiva ===
+  private audioElement: HTMLAudioElement | null = null;
 
-  public playBackground() {
+  public playBackground(audioUrl?: string) {
     if (!this.enabled) return;
     this.stopBackground();
+
+    if (audioUrl) {
+      try {
+        this.audioElement = new Audio(audioUrl);
+        this.audioElement.loop = true;
+        this.audioElement.volume = 0.75;
+        this.audioElement.play().catch(() => {
+          this.playSynthBackground();
+        });
+        return;
+      } catch {
+        this.playSynthBackground();
+        return;
+      }
+    }
+
+    this.playSynthBackground();
+  }
+
+  // === Música de fundo oriental / festiva (Synthesizer fallback) ===
+
+  private playSynthBackground() {
     try {
       this.initCtx(); if (!this.ctx) return;
       const ctx = this.ctx;
@@ -252,6 +274,13 @@ class SoundManager {
   }
 
   public stopBackground() {
+    if (this.audioElement) {
+      try {
+        this.audioElement.pause();
+        this.audioElement.currentTime = 0;
+      } catch {}
+      this.audioElement = null;
+    }
     if (this.bgTimer) { clearInterval(this.bgTimer); this.bgTimer = null; }
     const previousGain = this.bgGain;
     this.bgGain = null;

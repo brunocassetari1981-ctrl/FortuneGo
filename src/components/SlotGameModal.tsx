@@ -47,21 +47,21 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
       setLastWin(0);
       setWinPositions(new Set());
       if (soundEnabled) {
-        sound.playBackground();
+        sound.playBackground(game.audio);
       }
     }
     return () => {
       sound.stopBackground();
     };
-  }, [isOpen, game?.id]);
+  }, [isOpen, game?.id, game?.audio]);
 
   useEffect(() => {
-    if (musicOn && soundEnabled && isOpen) {
-      sound.playBackground();
+    if (musicOn && soundEnabled && isOpen && game) {
+      sound.playBackground(game.audio);
     } else {
       sound.stopBackground();
     }
-  }, [musicOn, soundEnabled, isOpen]);
+  }, [musicOn, soundEnabled, isOpen, game?.audio]);
 
   useEffect(() => {
     if (!autoSpin || spinning || !game) return;
