@@ -360,16 +360,28 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
       </div>
 
       {showBigWin && (
-        <div className="absolute inset-0 bg-gradient-to-b from-amber-500/95 via-yellow-400/95 to-orange-500/95 flex flex-col items-center justify-center text-center p-6 z-30">
-          <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center text-4xl shadow-xl animate-bounce">🎉</div>
-          <h3 className="font-black text-[#7c1a1a] text-4xl mt-4 drop-shadow">MEGA GANHO!</h3>
-          <p className="font-black text-[#7c1a1a] mt-2">R$ {bigWinAmount.toFixed(2).replace('.', ',')}</p>
-          <p className="text-[#7c1a1a]/80 text-xs font-bold mt-1">{game.name} • x{(bigWinAmount / bet).toFixed(1)}</p>
-          <div className="mt-4 flex gap-1">
-            {[1,2,3,4,5].map(i => <span key={i} className="w-3 h-3 rounded-full bg-white animate-bounce" style={{ animationDelay: `${i*120}ms` }} />)}
-          </div>
-          <p className="text-[10px] font-bold tracking-widest text-[#7c1a1a]/60 mt-4">Toque para continuar</p>
-        </div>
+        (() => {
+          const getGameTheme = () => {
+            if (game?.id === 'fortune-tiger') return { gradient: 'from-red-800/98 via-amber-600/98 to-yellow-600/98', textAccent: 'text-yellow-200', badgeBg: 'bg-red-900 border-amber-400', emoji: '🐯', title: 'TIGER MEGA WIN!' };
+            if (game?.id === 'fortune-rabbit' || game?.id === 'fortune-rabbit-2') return { gradient: 'from-rose-800/98 via-pink-600/98 to-rose-700/98', textAccent: 'text-pink-200', badgeBg: 'bg-rose-900 border-pink-400', emoji: '🐰', title: 'RABBIT FORTUNE!' };
+            if (game?.id === 'fortune-dragon') return { gradient: 'from-emerald-800/98 via-green-600/98 to-teal-700/98', textAccent: 'text-emerald-200', badgeBg: 'bg-emerald-900 border-emerald-400', emoji: '🐲', title: 'DRAGON IMPERIAL!' };
+            if (game?.id === 'fortune-ox') return { gradient: 'from-amber-800/98 via-yellow-600/98 to-orange-700/98', textAccent: 'text-amber-200', badgeBg: 'bg-amber-900 border-amber-400', emoji: '🐂', title: 'OX FORTUNE!' };
+            return { gradient: 'from-amber-500/98 via-yellow-400/98 to-orange-500/98', textAccent: 'text-[#7c1a1a]', badgeBg: 'bg-white border-amber-500', emoji: '🎉', title: 'MEGA GANHO!' };
+          };
+          const theme = getGameTheme();
+          return (
+            <div className={`absolute inset-0 bg-gradient-to-b ${theme.gradient} flex flex-col items-center justify-center text-center p-6 z-30 animate-screen-shake`}>
+              <div className={`w-20 h-20 rounded-full ${theme.badgeBg} border-2 flex items-center justify-center text-4xl shadow-2xl animate-bounce`}>{theme.emoji}</div>
+              <h3 className={`font-black ${theme.textAccent} text-4xl sm:text-5xl mt-4 drop-shadow-lg`} style={{fontFamily: 'Fredoka'}}>{theme.title}</h3>
+              <p className="font-black text-white text-3xl mt-2 drop-shadow">R$ {bigWinAmount.toFixed(2).replace('.', ',')}</p>
+              <p className="text-white/80 text-xs font-bold mt-1">{game.name} • x{(bigWinAmount / bet).toFixed(1)}</p>
+              <div className="mt-4 flex gap-1">
+                {[1,2,3,4,5].map(i => <span key={i} className="w-3 h-3 rounded-full bg-white animate-bounce" style={{ animationDelay: `${i*120}ms` }} />)}
+              </div>
+              <p className="text-[10px] font-bold tracking-widest text-white/60 mt-4">Toque para continuar</p>
+            </div>
+          );
+        })()
       )}
 
       {lastWin > 0 && !showBigWin && (
