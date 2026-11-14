@@ -385,24 +385,67 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
 
       {showBigWin && (
         (() => {
-          const getGameTheme = () => {
-            if (game?.id === 'fortune-tiger') return { gradient: 'from-red-800/98 via-amber-600/98 to-yellow-600/98', textAccent: 'text-yellow-200', badgeBg: 'bg-red-900 border-amber-400', emoji: '🐯', title: 'TIGER MEGA WIN!' };
-            if (game?.id === 'fortune-rabbit' || game?.id === 'fortune-rabbit-2') return { gradient: 'from-rose-800/98 via-pink-600/98 to-rose-700/98', textAccent: 'text-pink-200', badgeBg: 'bg-rose-900 border-pink-400', emoji: '🐰', title: 'RABBIT FORTUNE!' };
-            if (game?.id === 'fortune-dragon') return { gradient: 'from-emerald-800/98 via-green-600/98 to-teal-700/98', textAccent: 'text-emerald-200', badgeBg: 'bg-emerald-900 border-emerald-400', emoji: '🐲', title: 'DRAGON IMPERIAL!' };
-            if (game?.id === 'fortune-ox') return { gradient: 'from-amber-800/98 via-yellow-600/98 to-orange-700/98', textAccent: 'text-amber-200', badgeBg: 'bg-amber-900 border-amber-400', emoji: '🐂', title: 'OX FORTUNE!' };
-            return { gradient: 'from-amber-500/98 via-yellow-400/98 to-orange-500/98', textAccent: 'text-[#7c1a1a]', badgeBg: 'bg-white border-amber-500', emoji: '🎉', title: 'MEGA GANHO!' };
+          const getGameEffects = () => {
+            const effectsByGame: Record<string, Array<{ title: string; subtitle: string; emoji: string; bg: string; border: string; accent: string }>> = {
+              'fortune-tiger': [
+                { title: 'TIGER ROAR X10!', subtitle: 'Rugido dourado e multiplicador máximo!', emoji: '🐯', bg: 'from-red-900 via-amber-700 to-yellow-600', border: 'border-yellow-300', accent: 'text-yellow-200' },
+                { title: 'RED ENVELOPE BURST!', subtitle: 'Chuva de envelopes vermelhos da sorte!', emoji: '🧧', bg: 'from-red-800 via-rose-700 to-amber-600', border: 'border-rose-300', accent: 'text-rose-200' },
+                { title: 'GOLD VAULT OPEN!', subtitle: 'Cofre imperial aberto com barras de ouro!', emoji: '🪙', bg: 'from-amber-900 via-yellow-700 to-orange-600', border: 'border-amber-300', accent: 'text-amber-200' },
+                { title: 'CHERRY BLOSSOM STORM!', subtitle: 'Tempestade de pétalas e linhas de ouro!', emoji: '🌸', bg: 'from-rose-900 via-red-800 to-amber-700', border: 'border-pink-300', accent: 'text-pink-200' },
+                { title: 'JADE LIGHTNING JACKPOT!', subtitle: 'Relâmpagos de jade sobre os rolos!', emoji: '⚡', bg: 'from-emerald-900 via-green-800 to-yellow-700', border: 'border-emerald-300', accent: 'text-emerald-200' },
+              ],
+              'fortune-rabbit': [
+                { title: 'GOLDEN CARROT HARVEST!', subtitle: 'Colheita dourada de cenouras mágicas!', emoji: '🥕', bg: 'from-orange-900 via-amber-700 to-yellow-600', border: 'border-orange-300', accent: 'text-orange-200' },
+                { title: 'RABBIT HOPPING BONANZA!', subtitle: 'Coelhos saltitantes e trevos de sorte!', emoji: '🐰', bg: 'from-rose-900 via-pink-700 to-rose-600', border: 'border-pink-300', accent: 'text-pink-200' },
+                { title: 'DIAMOND CLOVER BLAST!', subtitle: 'Explosão de trevos de esmeralda e gemas!', emoji: '🍀', bg: 'from-emerald-900 via-teal-800 to-green-700', border: 'border-emerald-300', accent: 'text-emerald-200' },
+                { title: 'MOONLIGHT MAGIC DUST!', subtitle: 'Poeira lunar mágica multiplicadora!', emoji: '🌙', bg: 'from-indigo-900 via-purple-800 to-pink-700', border: 'border-indigo-300', accent: 'text-indigo-200' },
+                { title: 'LUCKY CLOVER WHEEL!', subtitle: 'Giro premiado da roda de trevos!', emoji: '🎰', bg: 'from-rose-900 via-amber-700 to-yellow-600', border: 'border-yellow-300', accent: 'text-yellow-200' },
+              ],
+              'fortune-dragon': [
+                { title: 'IMPERIAL DRAGON BREATH!', subtitle: 'Fogo esmeralda do dragão lendário!', emoji: '🐲', bg: 'from-emerald-950 via-green-800 to-teal-700', border: 'border-emerald-300', accent: 'text-emerald-200' },
+                { title: 'MYSTIC JADE PEARL!', subtitle: 'Oráculo da pérola mística de jade!', emoji: '🔮', bg: 'from-teal-950 via-emerald-800 to-cyan-700', border: 'border-teal-300', accent: 'text-teal-200' },
+                { title: 'GOLDEN SCALE CASCADE!', subtitle: 'Cascata de escamas de ouro imperial!', emoji: '🌟', bg: 'from-green-950 via-amber-800 to-yellow-700', border: 'border-amber-300', accent: 'text-amber-200' },
+                { title: 'THUNDERSTORM LIGHTNING!', subtitle: 'Tempestade de raios e trovões sagrados!', emoji: '⚡', bg: 'from-blue-950 via-indigo-900 to-emerald-800', border: 'border-cyan-300', accent: 'text-cyan-200' },
+                { title: 'TEMPLE GATE VAULT!', subtitle: 'Abertura do templo sagrado do dragão!', emoji: '⛩️', bg: 'from-red-950 via-emerald-900 to-yellow-700', border: 'border-yellow-300', accent: 'text-yellow-200' },
+              ],
+              'fortune-ox': [
+                { title: 'BULL STAMPEDE SURGE!', subtitle: 'Carga furiosa de energia dourada do touro!', emoji: '🐂', bg: 'from-amber-950 via-yellow-800 to-orange-700', border: 'border-yellow-300', accent: 'text-yellow-200' },
+                { title: 'TEMPLE BELL RESONANCE!', subtitle: 'Ressonância dos grandes sinos de ouro!', emoji: '🔔', bg: 'from-yellow-950 via-amber-800 to-orange-800', border: 'border-amber-300', accent: 'text-amber-200' },
+                { title: 'YUANBAO GOLD TOWER!', subtitle: 'Torre monumental de lingotes Yuanbao!', emoji: '🪙', bg: 'from-orange-950 via-amber-800 to-yellow-700', border: 'border-orange-300', accent: 'text-orange-200' },
+                { title: 'AMBER ELECTRIC SURGE!', subtitle: 'Surto elétrico de âmbar nos rolos!', emoji: '⚡', bg: 'from-amber-900 via-orange-900 to-yellow-800', border: 'border-amber-400', accent: 'text-amber-200' },
+                { title: 'FORTUNE BELL TOLL RAIN!', subtitle: 'Chuva de sinos dourados da fortuna!', emoji: '🏆', bg: 'from-yellow-900 via-amber-700 to-red-800', border: 'border-yellow-300', accent: 'text-yellow-200' },
+              ]
+            };
+
+            const list = effectsByGame[game?.id || ''] || [
+              { title: 'MEGA GANHO!', subtitle: 'Grande prêmio acumulado!', emoji: '🎉', bg: 'from-amber-600 via-yellow-500 to-orange-600', border: 'border-white', accent: 'text-yellow-200' }
+            ];
+            return list[Math.floor(Math.random() * list.length)];
           };
-          const theme = getGameTheme();
+          const effect = getGameEffects();
           return (
-            <div className={`absolute inset-0 bg-gradient-to-b ${theme.gradient} flex flex-col items-center justify-center text-center p-6 z-30 animate-screen-shake`}>
-              <div className={`w-20 h-20 rounded-full ${theme.badgeBg} border-2 flex items-center justify-center text-4xl shadow-2xl animate-bounce`}>{theme.emoji}</div>
-              <h3 className={`font-black ${theme.textAccent} text-4xl sm:text-5xl mt-4 drop-shadow-lg`} style={{fontFamily: 'Fredoka'}}>{theme.title}</h3>
-              <p className="font-black text-white text-3xl mt-2 drop-shadow">R$ {bigWinAmount.toFixed(2).replace('.', ',')}</p>
-              <p className="text-white/80 text-xs font-bold mt-1">{game.name} • x{(bigWinAmount / bet).toFixed(1)}</p>
-              <div className="mt-4 flex gap-1">
-                {[1,2,3,4,5].map(i => <span key={i} className="w-3 h-3 rounded-full bg-white animate-bounce" style={{ animationDelay: `${i*120}ms` }} />)}
+            <div className={`absolute inset-0 bg-gradient-to-b ${effect.bg}/98 flex flex-col items-center justify-center text-center p-6 z-30 animate-screen-shake`}>
+              <div className="w-24 h-24 rounded-full bg-black/40 border-2 border-yellow-300 flex items-center justify-center text-5xl shadow-2xl animate-bounce mb-3">
+                {effect.emoji}
               </div>
-              <p className="text-[10px] font-bold tracking-widest text-white/60 mt-4">Toque para continuar</p>
+              <h3 className={`font-black ${effect.accent} text-3xl sm:text-4xl mt-2 drop-shadow-lg tracking-wider`} style={{fontFamily: 'Fredoka'}}>
+                {effect.title}
+              </h3>
+              <p className="text-white/80 text-xs font-bold mt-1 max-w-[280px]">
+                {effect.subtitle}
+              </p>
+              <p className="font-black text-white text-4xl sm:text-5xl mt-3 drop-shadow-xl">
+                R$ {bigWinAmount.toFixed(2).replace('.', ',')}
+              </p>
+              <p className="text-amber-300 text-xs font-black mt-1">
+                {game.name} • x{(bigWinAmount / bet).toFixed(1)}
+              </p>
+              <div className="mt-6 flex gap-1.5">
+                {[1,2,3,4,5].map(i => <span key={i} className="w-3.5 h-3.5 rounded-full bg-amber-300 animate-bounce shadow-md" style={{ animationDelay: `${i*120}ms` }} />)}
+              </div>
+              <p className="text-[10px] font-bold tracking-widest text-white/50 mt-6 uppercase">
+                Toque para continuar
+              </p>
             </div>
           );
         })()
