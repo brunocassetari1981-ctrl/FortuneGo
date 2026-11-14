@@ -183,9 +183,9 @@ export const SlotReel: React.FC<SlotReelProps> = ({
           : 'h-full border-y-2 border-r border-white/15 first:border-l'
       }`}
       style={{
-        borderColor: reelIndex === 1 ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.08)',
+        borderColor: reelIndex === 1 ? 'rgba(252,211,77,0.4)' : 'rgba(255,255,255,0.08)',
         containerType: 'size',
-        background: 'rgba(0,0,0,0.28)',
+        background: game.id === 'fortune-tiger' ? '#fef9ec' : 'rgba(0,0,0,0.28)',
         backdropFilter: 'blur(6px)',
       } as React.CSSProperties}
     >

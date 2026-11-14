@@ -166,6 +166,7 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
     'wild-bandito': '/characters/wild-bandito.png',
     'dragon-hatch': '/characters/dragon-hatch.png',
   };
+  const isTiger = game?.id === 'fortune-tiger';
   const characterSrc = game ? CHARACTER_MAP[game.id] : undefined;
 
   // Transparente em todos os jogos — sem cores sólidas
@@ -176,7 +177,7 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
     <div className="fixed inset-y-0 left-0 z-[60] flex w-screen items-center justify-center overflow-hidden bg-black/60 p-0 backdrop-blur-[2px] sm:p-3" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       <FortuneArtwork game={game} className="pointer-events-none absolute inset-0 h-full w-full scale-110 opacity-20 blur-xl" />
       <div aria-hidden="true" className="absolute inset-0 bg-transparent" />
-      <div className="relative z-10 flex h-[100dvh] w-full max-w-[430px] flex-col overflow-hidden border border-white/10 bg-black/30 shadow-2xl backdrop-blur-md sm:h-[92vh] sm:rounded-[28px] sm:border-white/10 sm:shadow-[0_20px_60px_rgba(0,0,0,0.6)]">
+      <div className={`relative z-10 flex h-[100dvh] w-full max-w-[430px] flex-col overflow-hidden border border-white/10 shadow-2xl backdrop-blur-md sm:h-[92vh] sm:rounded-[28px] sm:border-white/10 sm:shadow-[0_20px_60px_rgba(0,0,0,0.6)] ${isTiger ? 'bg-gradient-to-b from-[#7f1d1d] via-[#991b1b] to-[#4c0519]' : 'bg-black/30'}`}>
 
         {/* Header — só figura 3D sem fundo em todos os jogos */}
         <div className="relative z-20 h-[21%] min-h-[132px] max-h-[152px] shrink-0 overflow-visible flex flex-col items-center justify-end pb-6 bg-transparent border-b border-white/5" style={{ background: headerBg }}>
@@ -243,6 +244,15 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
             </div>
           )}
         </div>
+
+        {/* Banner Ganhe até 2500x para Fortune Tiger */}
+        {game?.id === 'fortune-tiger' && (
+          <div className="relative z-25 mx-auto -mt-2 mb-1 w-[90%] max-w-[340px] rounded-xl border-2 border-amber-300 bg-gradient-to-r from-red-800 via-red-600 to-red-800 py-1.5 text-center shadow-lg">
+            <span className="font-fredoka text-sm font-black tracking-wide text-emerald-300 drop-shadow">
+              Ganhe até 2500x!
+            </span>
+          </div>
+        )}
 
 
 
