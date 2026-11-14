@@ -35,7 +35,7 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
   const [turbo, setTurbo] = useState(false);
   const [freeSpins, setFreeSpins] = useState(0);
   const autoRef = useRef<number | null>(null);
-  const [musicOn, setMusicOn] = useState(false);
+  const [musicOn, setMusicOn] = useState(true);
   const touchStartY = useRef(0);
   const stoppedReelsRef = useRef(new Set<number>());
   const spinCompletionRef = useRef<((completed: boolean) => void) | null>(null);
@@ -46,13 +46,22 @@ export const SlotGameModal: React.FC<SlotGameModalProps> = ({ isOpen, onClose, g
       setGrid(init.grid);
       setLastWin(0);
       setWinPositions(new Set());
+      if (soundEnabled) {
+        sound.playBackground();
+      }
     }
+    return () => {
+      sound.stopBackground();
+    };
   }, [isOpen, game?.id]);
 
   useEffect(() => {
-    sound.stopBackground();
-    return () => sound.stopBackground();
-  }, [musicOn, soundEnabled, isOpen, game?.id]);
+    if (musicOn && soundEnabled && isOpen) {
+      sound.playBackground();
+    } else {
+      sound.stopBackground();
+    }
+  }, [musicOn, soundEnabled, isOpen]);
 
   useEffect(() => {
     if (!autoSpin || spinning || !game) return;
