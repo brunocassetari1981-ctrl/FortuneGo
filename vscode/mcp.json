@@ -1,0 +1,8 @@
+{
+  " servidores " : {
+    " contente " : {
+      " tipo " : " http " ,
+      " url " : " https://mcp.contentful.com/mcp "
+    }
+  }
+}
